@@ -241,6 +241,10 @@ private fun HomeScreen() {
                 }
             }
         )
+
+        if (currentUser != null) {
+            AdminPanel()
+        }
     }
 }
 
