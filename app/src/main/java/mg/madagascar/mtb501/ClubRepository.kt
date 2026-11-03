@@ -128,8 +128,7 @@ class ClubRepository(
             }
 
     suspend fun getPublicMembers(): List<ClubMember> =
-        db.collection("members").whereEqualTo("publicProfile", true)
-            .orderBy("name", Query.Direction.ASCENDING).get().await()
+        db.collection("members").whereEqualTo("publicProfile", true).get().await()
             .documents.mapNotNull { doc ->
                 val name = doc.getString("name") ?: return@mapNotNull null
                 ClubMember(
@@ -139,7 +138,7 @@ class ClubRepository(
                     photoURL = doc.getString("photoURL"),
                     publicProfile = true
                 )
-            }
+            }.sortedBy { it.name }
 
     suspend fun getClubSummary(): ClubSummary {
         val snapshot = db.collection("publicStats").document("clubSummary").get().await()
