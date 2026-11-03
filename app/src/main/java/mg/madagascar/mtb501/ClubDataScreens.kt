@@ -164,7 +164,6 @@ fun RidersScreen() {
     }
 }
 
-
 @Composable
 fun AdminPanel() {
     val repository = remember { ClubRepository() }
@@ -172,7 +171,6 @@ fun AdminPanel() {
     var isAdmin by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var accounts by remember { mutableStateOf<List<PendingAccount>>(emptyList()) }
-    var memberIds by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var message by remember { mutableStateOf<String?>(null) }
 
     suspend fun refresh() {
@@ -198,6 +196,12 @@ fun AdminPanel() {
             Text("Administrator", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
             Text("Pending account approvals: ${accounts.size}")
             if (accounts.isEmpty()) Text("No accounts waiting for approval.")
+
+            AdminPublishingSection(
+                repository = repository,
+                onMessage = { message = it }
+            )
+
             accounts.forEach { account ->
                 var localMemberId by remember(account.uid) { mutableStateOf("") }
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -242,5 +246,80 @@ fun AdminPanel() {
         }
     } else if (FirebaseAuth.getInstance().currentUser != null) {
         Text("Administrator access only.", modifier = Modifier.padding(top = 12.dp), color = MaterialTheme.colorScheme.error)
+    }
+}
+
+@Composable
+private fun AdminPublishingSection(
+    repository: ClubRepository,
+    onMessage: (String) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var rideTitle by remember { mutableStateOf("") }
+    var rideDate by remember { mutableStateOf("") }
+    var rideLocation by remember { mutableStateOf("") }
+    var rideDistance by remember { mutableStateOf("") }
+    var rideLink by remember { mutableStateOf("") }
+    var eventTitle by remember { mutableStateOf("") }
+    var eventDate by remember { mutableStateOf("") }
+    var eventLocation by remember { mutableStateOf("") }
+    var eventType by remember { mutableStateOf("COMMUNITY") }
+    var eventDescription by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
+
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Publish a ride", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            androidx.compose.material3.OutlinedTextField(rideTitle, { rideTitle = it }, label = { Text("Ride title") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            androidx.compose.material3.OutlinedTextField(rideDate, { rideDate = it }, label = { Text("Date (YYYY-MM-DD)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            androidx.compose.material3.OutlinedTextField(rideLocation, { rideLocation = it }, label = { Text("Location") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            androidx.compose.material3.OutlinedTextField(rideDistance, { rideDistance = it }, label = { Text("Distance (km)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            androidx.compose.material3.OutlinedTextField(rideLink, { rideLink = it }, label = { Text("Facebook link (optional)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            Button(
+                enabled = !saving && rideTitle.isNotBlank() && rideDate.isNotBlank() && rideLocation.isNotBlank() && (rideDistance.toDoubleOrNull() ?: 0.0) > 0.0,
+                onClick = {
+                    scope.launch {
+                        saving = true
+                        try {
+                            repository.createRide(rideTitle, rideDate, rideDistance.toDouble(), rideLocation, rideLink.ifBlank { null })
+                            rideTitle = ""; rideDate = ""; rideLocation = ""; rideDistance = ""; rideLink = ""
+                            onMessage("Ride published successfully.")
+                        } catch (e: Exception) {
+                            onMessage(e.localizedMessage ?: "Ride could not be published.")
+                        } finally {
+                            saving = false
+                        }
+                    }
+                }
+            ) { Text(if (saving) "Publishing…" else "Publish ride") }
+        }
+    }
+
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Publish an event", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            androidx.compose.material3.OutlinedTextField(eventTitle, { eventTitle = it }, label = { Text("Event title") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            androidx.compose.material3.OutlinedTextField(eventDate, { eventDate = it }, label = { Text("Date (YYYY-MM-DD)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            androidx.compose.material3.OutlinedTextField(eventLocation, { eventLocation = it }, label = { Text("Location") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            androidx.compose.material3.OutlinedTextField(eventType, { eventType = it.uppercase() }, label = { Text("Type: RACE, CARNIVAL, FESTIVAL, COMMUNITY") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            androidx.compose.material3.OutlinedTextField(eventDescription, { eventDescription = it }, label = { Text("Description (optional)") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+            Button(
+                enabled = !saving && eventTitle.isNotBlank() && eventDate.isNotBlank() && eventLocation.isNotBlank() && eventType in ClubEventType.values().map { it.name },
+                onClick = {
+                    scope.launch {
+                        saving = true
+                        try {
+                            repository.createEvent(eventTitle, eventDate, eventLocation, ClubEventType.valueOf(eventType), eventDescription)
+                            eventTitle = ""; eventDate = ""; eventLocation = ""; eventDescription = ""; eventType = "COMMUNITY"
+                            onMessage("Event published successfully.")
+                        } catch (e: Exception) {
+                            onMessage(e.localizedMessage ?: "Event could not be published.")
+                        } finally {
+                            saving = false
+                        }
+                    }
+                }
+            ) { Text(if (saving) "Publishing…" else "Publish event") }
+        }
     }
 }

@@ -147,7 +147,6 @@ class ClubRepository(
                 )
             }.sortedBy { it.name }
 
-
     suspend fun getPendingAccounts(): List<PendingAccount> =
         db.collection("users").whereEqualTo("approvalStatus", ApprovalStatus.PENDING.name)
             .get().await().documents.map { doc ->
@@ -189,6 +188,56 @@ class ClubRepository(
             transaction.update(userRef, updates)
             null
         }.await()
+    }
+
+    suspend fun createRide(
+        title: String,
+        date: String,
+        distanceKm: Double,
+        location: String,
+        facebookLink: String?
+    ) {
+        require(title.isNotBlank()) { "Ride title is required." }
+        require(date.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) { "Date must use YYYY-MM-DD." }
+        require(distanceKm > 0.0) { "Distance must be greater than zero." }
+        require(location.isNotBlank()) { "Ride location is required." }
+        val adminUid = auth.currentUser?.uid ?: error("Administrator sign-in is required.")
+        val data = mutableMapOf<String, Any>(
+            "title" to title.trim(),
+            "date" to date,
+            "distanceKm" to distanceKm,
+            "location" to location.trim(),
+            "type" to "RIDE",
+            "status" to RideStatus.PLANNED.name,
+            "createdBy" to adminUid,
+            "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+        )
+        if (!facebookLink.isNullOrBlank()) data["facebookLink"] = facebookLink.trim()
+        db.collection("rides").document().set(data).await()
+    }
+
+    suspend fun createEvent(
+        title: String,
+        date: String,
+        location: String,
+        type: ClubEventType,
+        description: String
+    ) {
+        require(title.isNotBlank()) { "Event title is required." }
+        require(date.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) { "Date must use YYYY-MM-DD." }
+        require(location.isNotBlank()) { "Event location is required." }
+        val adminUid = auth.currentUser?.uid ?: error("Administrator sign-in is required.")
+        db.collection("events").document().set(
+            mapOf(
+                "title" to title.trim(),
+                "date" to date,
+                "location" to location.trim(),
+                "type" to type.name,
+                "description" to description.trim(),
+                "createdBy" to adminUid,
+                "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+        ).await()
     }
 
     suspend fun getClubSummary(): ClubSummary {
