@@ -49,7 +49,14 @@ data class ClubMember(
     val publicProfile: Boolean = true
 )
 
-data class PendingAccount(\n    val uid: String = "",\n    val email: String = "",\n    val displayName: String = "",\n    val approvalStatus: ApprovalStatus = ApprovalStatus.PENDING\n)\n\ndata class ClubSummary(
+data class PendingAccount(
+    val uid: String = "",
+    val email: String = "",
+    val displayName: String = "",
+    val approvalStatus: ApprovalStatus = ApprovalStatus.PENDING
+)
+
+data class ClubSummary(
     val totalRides: Long = 0,
     val totalDistanceKm: Double = 0.0,
     val activeMembers: Long = 0
