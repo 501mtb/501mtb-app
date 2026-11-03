@@ -49,7 +49,7 @@ data class ClubMember(
     val publicProfile: Boolean = true
 )
 
-data class ClubSummary(
+data class PendingAccount(\n    val uid: String = "",\n    val email: String = "",\n    val displayName: String = "",\n    val approvalStatus: ApprovalStatus = ApprovalStatus.PENDING\n)\n\ndata class ClubSummary(
     val totalRides: Long = 0,
     val totalDistanceKm: Double = 0.0,
     val activeMembers: Long = 0
@@ -139,6 +139,50 @@ class ClubRepository(
                     publicProfile = true
                 )
             }.sortedBy { it.name }
+
+
+    suspend fun getPendingAccounts(): List<PendingAccount> =
+        db.collection("users").whereEqualTo("approvalStatus", ApprovalStatus.PENDING.name)
+            .get().await().documents.map { doc ->
+                PendingAccount(
+                    uid = doc.id,
+                    email = doc.getString("email") ?: "",
+                    displayName = doc.getString("displayName") ?: ""
+                )
+            }.sortedBy { it.displayName }
+
+    suspend fun reviewAccount(uid: String, approve: Boolean, memberId: String? = null) {
+        require(uid.isNotBlank()) { "Account ID is missing." }
+        val adminUid = auth.currentUser?.uid ?: error("Administrator sign-in is required.")
+        val userRef = db.collection("users").document(uid)
+        db.runTransaction { transaction ->
+            val userSnapshot = transaction.get(userRef)
+            require(userSnapshot.exists()) { "Account no longer exists." }
+            require(userSnapshot.getString("approvalStatus") == ApprovalStatus.PENDING.name) {
+                "This account has already been reviewed."
+            }
+            val updates = mutableMapOf<String, Any>(
+                "approvalStatus" to if (approve) ApprovalStatus.APPROVED.name else ApprovalStatus.REJECTED.name,
+                "reviewedBy" to adminUid,
+                "reviewedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+            if (approve && !memberId.isNullOrBlank()) {
+                val memberRef = db.collection("members").document(memberId)
+                val memberSnapshot = transaction.get(memberRef)
+                require(memberSnapshot.exists()) { "The selected legacy member does not exist." }
+                val linkRef = db.collection("memberLinks").document(memberId)
+                transaction.set(linkRef, mapOf(
+                    "memberId" to memberId,
+                    "userUid" to uid,
+                    "linkedBy" to adminUid,
+                    "linkedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                ))
+                updates["memberId"] = memberId
+            }
+            transaction.update(userRef, updates)
+            null
+        }.await()
+    }
 
     suspend fun getClubSummary(): ClubSummary {
         val snapshot = db.collection("publicStats").document("clubSummary").get().await()
