@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "784139733906",
+    "project_id": "mtb-app-3fb1d",
+    "storage_bucket": "mtb-app-3fb1d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:784139733906:android:8dd88ed53a8ece20e70f4b",
+        "android_client_info": {
+          "package_name": "mg.madagascar.mtb501"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "784139733906-gfb57rphnam2od5schkp5i7vac1nfm0l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "mg.madagascar.mtb501",
+            "certificate_hash": "abdcaf87eaae13d4e0903f44758598feef0c943b"
+          }
+        },
+        {
+          "client_id": "784139733906-014sg479jhskrhjkkhvs6it56vdc7hrd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJtHEHIyJCd24eFW0twzaC0SOlb_4xHM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "784139733906-014sg479jhskrhjkkhvs6it56vdc7hrd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,12 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.iml
+
+# Local Firebase configuration and secrets
+app/google-services.json
+google-services.json
+*.jks
+*.keystore
+.env
