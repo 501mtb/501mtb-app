@@ -9,21 +9,29 @@ Development is taking place on the `initial/android-skeleton` branch and remains
 ## Implemented
 
 - Kotlin, Jetpack Compose and Material 3 application shell.
-- Bottom navigation for Home, Rides, Events and Riders.
+- Bottom navigation with the new Feed entry, alongside Home, Rides, Events and Riders.
 - Firebase Authentication with Google Credential Manager sign-in.
 - Automatic creation of a pending USER account record after Google sign-in, when Firestore is available.
 - Firestore repository and data models for accounts, rides, events, public member profiles and club summary.
 - Firestore-backed Rides, Events and Riders screens.
+- Community Feed screen with image selection, preview, Firebase Storage upload and Firestore post records.
+- Admin-only official Feed post flag; approved members can publish community photos; pending/rejected accounts are read-only.
+- Firestore and Storage security rules for Feed photo ownership, approval status, file type and 10 MB upload limit.
 - Ride registration restricted to signed-in, administrator-approved members.
 - Firestore rules that prevent users from self-approving, assigning themselves a member link, or promoting their own role.
 
 ## Still to complete
 
 - Firestore database creation and region selection in Firebase Console.
+- Enable Firebase Storage and deploy the repository `storage.rules` file from Firebase Console or Firebase CLI.
+- Deploy the updated `firestore.rules` ruleset before testing Feed publishing.
 - Trusted initial administrator bootstrap.
 - Admin screens for approving accounts, linking existing club members, publishing rides/events and recording attendance.
 - Migration/import of verified club data.
 - End-to-end tests with Firebase Emulator Suite and a real test account.
+- End-to-end tests for Feed upload/deletion and Admin moderation with Firebase Emulator Suite and real test accounts.
+- Add photo attachments to official ride/event records and member Ride Records.
+- Complete the approved Feed presentation and interactions (horizontal story rail, expanded photo, comments, fire reactions and share) before release.
 - Offline and error-state testing before release.
 
 ## Technology
