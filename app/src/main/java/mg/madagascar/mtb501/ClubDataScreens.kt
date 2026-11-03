@@ -106,7 +106,7 @@ fun EventsScreen() {
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Events", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
-        Text("Races, carnivals, festivals and community activities", style = MaterialTheme.typography.bodyMedium)
+        Text("Races, carnavals, festivals and community activities", style = MaterialTheme.typography.bodyMedium)
         when {
             loading -> CircularProgressIndicator(Modifier.padding(20.dp))
             error != null -> Text(error!!, modifier = Modifier.padding(top = 16.dp), color = MaterialTheme.colorScheme.error)
