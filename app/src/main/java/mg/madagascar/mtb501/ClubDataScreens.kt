@@ -301,7 +301,7 @@ private fun AdminPublishingSection(
             androidx.compose.material3.OutlinedTextField(eventTitle, { eventTitle = it }, label = { Text("Event title") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
             androidx.compose.material3.OutlinedTextField(eventDate, { eventDate = it }, label = { Text("Date (YYYY-MM-DD)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
             androidx.compose.material3.OutlinedTextField(eventLocation, { eventLocation = it }, label = { Text("Location") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-            androidx.compose.material3.OutlinedTextField(eventType, { eventType = it.uppercase() }, label = { Text("Type: RACE, CARNIVAL, FESTIVAL, COMMUNITY") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            androidx.compose.material3.OutlinedTextField(eventType, { eventType = it.uppercase() }, label = { Text("Type: RACE, CARNAVAL, FESTIVAL, COMMUNITY") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
             androidx.compose.material3.OutlinedTextField(eventDescription, { eventDescription = it }, label = { Text("Description (optional)") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
             Button(
                 enabled = !saving && eventTitle.isNotBlank() && eventDate.isNotBlank() && eventLocation.isNotBlank() && eventType in ClubEventType.values().map { it.name },

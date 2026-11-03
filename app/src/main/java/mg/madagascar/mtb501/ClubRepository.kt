@@ -9,7 +9,7 @@ import kotlinx.coroutines.tasks.await
 enum class ApprovalStatus { PENDING, APPROVED, REJECTED, SUSPENDED }
 enum class AppRole { USER, ADMIN }
 enum class RideStatus { PLANNED, COMPLETED, CANCELLED }
-enum class ClubEventType { CARNIVAL, RACE, FESTIVAL, COMMUNITY }
+enum class ClubEventType { CARNAVAL, RACE, FESTIVAL, COMMUNITY }
 
 data class ClubUser(
     val uid: String = "",
