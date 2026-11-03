@@ -163,3 +163,84 @@ fun RidersScreen() {
         }
     }
 }
+
+
+@Composable
+fun AdminPanel() {
+    val repository = remember { ClubRepository() }
+    val scope = rememberCoroutineScope()
+    var isAdmin by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(true) }
+    var accounts by remember { mutableStateOf<List<PendingAccount>>(emptyList()) }
+    var memberIds by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var message by remember { mutableStateOf<String?>(null) }
+
+    suspend fun refresh() {
+        val account = repository.getMyAccount()
+        isAdmin = account?.role == AppRole.ADMIN
+        if (isAdmin) accounts = repository.getPendingAccounts()
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            refresh()
+        } catch (e: Exception) {
+            message = "Admin data could not be loaded. Check administrator permissions and Firestore."
+        } finally {
+            loading = false
+        }
+    }
+
+    if (loading) {
+        CircularProgressIndicator(Modifier.padding(16.dp))
+    } else if (isAdmin) {
+        Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Administrator", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Text("Pending account approvals: ${accounts.size}")
+            if (accounts.isEmpty()) Text("No accounts waiting for approval.")
+            accounts.forEach { account ->
+                var localMemberId by remember(account.uid) { mutableStateOf("") }
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(account.displayName.ifBlank { "New member" }, style = MaterialTheme.typography.titleMedium)
+                        Text(account.email, style = MaterialTheme.typography.bodySmall)
+                        androidx.compose.material3.OutlinedTextField(
+                            value = localMemberId,
+                            onValueChange = { localMemberId = it },
+                            label = { Text("Existing member ID (optional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = {
+                                scope.launch {
+                                    try {
+                                        repository.reviewAccount(account.uid, true, localMemberId.trim().ifBlank { null })
+                                        message = "Account approved."
+                                        refresh()
+                                    } catch (e: Exception) {
+                                        message = e.localizedMessage ?: "Approval failed."
+                                    }
+                                }
+                            }) { Text("Approve") }
+                            Button(onClick = {
+                                scope.launch {
+                                    try {
+                                        repository.reviewAccount(account.uid, false)
+                                        message = "Account rejected."
+                                        refresh()
+                                    } catch (e: Exception) {
+                                        message = e.localizedMessage ?: "Rejection failed."
+                                    }
+                                }
+                            }) { Text("Reject") }
+                        }
+                    }
+                }
+            }
+            message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+        }
+    } else if (FirebaseAuth.getInstance().currentUser != null) {
+        Text("Administrator access only.", modifier = Modifier.padding(top = 12.dp), color = MaterialTheme.colorScheme.error)
+    }
+}
