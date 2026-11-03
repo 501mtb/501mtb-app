@@ -49,6 +49,12 @@ data class ClubMember(
     val publicProfile: Boolean = true
 )
 
+data class ClubAttendance(
+    val memberId: String = "",
+    val memberName: String = "",
+    val attended: Boolean = false
+)
+
 data class PendingAccount(
     val uid: String = "",
     val email: String = "",
@@ -146,6 +152,46 @@ class ClubRepository(
                     publicProfile = true
                 )
             }.sortedBy { it.name }
+
+    suspend fun getAllMembers(): List<ClubMember> =
+        db.collection("members").get().await().documents.mapNotNull { doc ->
+            val name = doc.getString("name") ?: return@mapNotNull null
+            ClubMember(
+                id = doc.id,
+                name = name,
+                badge = doc.getString("badge") ?: "Rookie",
+                photoURL = doc.getString("photoURL"),
+                publicProfile = doc.getBoolean("publicProfile") ?: false
+            )
+        }.sortedBy { it.name }
+
+    suspend fun getRideAttendance(rideId: String): Map<String, ClubAttendance> {
+        require(rideId.isNotBlank()) { "Ride ID is missing." }
+        return db.collection("rides").document(rideId).collection("attendance")
+            .get().await().documents.associate { doc ->
+                doc.id to ClubAttendance(
+                    memberId = doc.id,
+                    memberName = doc.getString("memberName") ?: "",
+                    attended = doc.getBoolean("attended") ?: false
+                )
+            }
+    }
+
+    suspend fun setRideAttendance(rideId: String, member: ClubMember, attended: Boolean) {
+        require(rideId.isNotBlank()) { "Ride ID is missing." }
+        require(member.id.isNotBlank()) { "Member ID is missing." }
+        val adminUid = auth.currentUser?.uid ?: error("Administrator sign-in is required.")
+        db.collection("rides").document(rideId).collection("attendance").document(member.id)
+            .set(
+                mapOf(
+                    "memberId" to member.id,
+                    "memberName" to member.name,
+                    "attended" to attended,
+                    "recordedBy" to adminUid,
+                    "recordedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
+            ).await()
+    }
 
     suspend fun getPendingAccounts(): List<PendingAccount> =
         db.collection("users").whereEqualTo("approvalStatus", ApprovalStatus.PENDING.name)
