@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -76,10 +77,11 @@ private data class AppTab(
 )
 
 private val appTabs = listOf(
-    AppTab("home", "Home", Icons.Default.Home),
+    AppTab("home", "Feed", Icons.Default.Home),
+    AppTab("club", "501 Profile", Icons.Default.Groups),
     AppTab("rides", "Rides", Icons.Default.DirectionsBike),
     AppTab("events", "Events", Icons.Default.Event),
-    AppTab("riders", "Riders", Icons.Default.Groups)
+    AppTab("riders", "Rider", Icons.Default.Person)
 )
 
 @Composable
@@ -119,6 +121,12 @@ private fun ClubApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("home") { HomeScreen() }
+            composable("club") {
+                PlaceholderScreen(
+                    title = "501 Profile",
+                    description = "The approved club profile layout will be implemented in this section."
+                )
+            }
             composable("rides") { RidesScreen() }
             composable("events") { EventsScreen() }
             composable("riders") { RidersScreen() }
@@ -152,32 +160,7 @@ private fun HomeScreen() {
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "501MTB",
-            style = MaterialTheme.typography.displayMedium,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Black
-        )
-        Text(
-            text = "WHERE LEGENDS RISE",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Discover Yourself, Broaden Your Horizon, Explore The World",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        InfoCard(
-            title = "Next Ride",
-            description = "Ride information and registration will be available here."
-        )
-        InfoCard(
-            title = "501MTB Community",
-            description = "Discover the club, its riders and its activities in Madagascar."
-        )
+        FeedScreen()
 
         AccountCard(
             displayName = currentUser?.displayName,
