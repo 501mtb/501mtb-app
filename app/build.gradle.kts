@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "mg.madagascar.mtb501"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "mg.madagascar.mtb501"
         minSdk = 26
-        targetSdk = 37
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
     }
