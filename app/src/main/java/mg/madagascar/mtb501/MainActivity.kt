@@ -117,9 +117,9 @@ private fun ClubApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("home") { HomeScreen() }
-            composable("rides") { PlaceholderScreen("Rides", "Upcoming rides and completed ride history will appear here.") }
-            composable("events") { PlaceholderScreen("Events", "Club events, races, carnivals and festivals will appear here.") }
-            composable("riders") { PlaceholderScreen("Riders", "Public 501MTB member profiles will appear here.") }
+            composable("rides") { RidesScreen() }
+            composable("events") { EventsScreen() }
+            composable("riders") { RidersScreen() }
         }
     }
 }
@@ -210,6 +210,7 @@ private fun HomeScreen() {
                                 null
                             )
                             auth.signInWithCredential(firebaseCredential).await()
+                            ClubRepository().ensurePendingAccount()
                         } else {
                             authMessage = "Google did not return a valid sign-in credential. Please try again."
                         }
