@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -76,6 +77,7 @@ private data class AppTab(
 )
 
 private val appTabs = listOf(
+    AppTab("feed", "Feed", Icons.Default.DynamicFeed),
     AppTab("home", "Home", Icons.Default.Home),
     AppTab("rides", "Rides", Icons.Default.DirectionsBike),
     AppTab("events", "Events", Icons.Default.Event),
@@ -118,6 +120,7 @@ private fun ClubApp() {
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable("feed") { FeedScreen() }
             composable("home") { HomeScreen() }
             composable("rides") { RidesScreen() }
             composable("events") { EventsScreen() }
