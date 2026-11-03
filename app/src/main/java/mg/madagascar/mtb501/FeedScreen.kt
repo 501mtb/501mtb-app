@@ -3,7 +3,6 @@ package mg.madagascar.mtb501
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,14 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -41,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,13 +46,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 
 @Composable
 fun FeedScreen() {
     val repository = remember { ClubRepository() }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     var rides by remember { mutableStateOf<List<ClubRide>>(emptyList()) }
     var members by remember { mutableStateOf<List<ClubMember>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -314,7 +307,7 @@ private fun RideFeedCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onFire) {
                             Icon(
-                                if (isFired) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                Icons.Filled.Whatshot,
                                 contentDescription = "Fire reaction",
                                 tint = if (isFired) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
