@@ -26,8 +26,7 @@ service firebase.storage {
         && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
       allow delete: if signedIn()
-        && request.auth.uid == uid
-        && (isApprovedMember() || isAdmin());
+        && (isAdmin() || (request.auth.uid == uid && isApprovedMember()));
       allow update: if false;
     }
   }
