@@ -31,13 +31,18 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isOwnUser(uid) || isAdmin();
 
-      // New accounts may create only a pending USER record.
+      // A new Google account can create only its own pending USER profile.
+      // No memberId, role escalation, approval, or arbitrary extra fields.
       allow create: if isOwnUser(uid)
+        && request.resource.data.keys().hasOnly([
+          "uid", "email", "displayName", "photoURL", "role",
+          "approvalStatus", "createdAt"
+        ])
+        && request.resource.data.uid == request.auth.uid
         && request.resource.data.role == "USER"
-        && request.resource.data.approvalStatus == "PENDING"
-        && request.resource.data.uid == request.auth.uid;
+        && request.resource.data.approvalStatus == "PENDING";
 
-      // Users cannot approve themselves, assign roles, or change member links.
+      // Only an administrator can approve accounts or link legacy member records.
       allow update, delete: if isAdmin();
     }
 
@@ -56,8 +61,14 @@ service cloud.firestore {
 
       match /registrations/{uid} {
         allow read: if isAdmin() || isOwnUser(uid);
-        allow create: if isOwnUser(uid) && isApprovedMember();
-        allow update, delete: if isAdmin() || (isOwnUser(uid) && isApprovedMember());
+        allow create: if isOwnUser(uid)
+          && isApprovedMember()
+          && request.resource.data.keys().hasOnly(["uid", "status", "registeredAt"])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.status == "REGISTERED"
+          && request.resource.data.registeredAt == request.time;
+        allow update: if isAdmin();
+        allow delete: if isAdmin() || (isOwnUser(uid) && isApprovedMember());
       }
 
       match /attendance/{memberId} {
