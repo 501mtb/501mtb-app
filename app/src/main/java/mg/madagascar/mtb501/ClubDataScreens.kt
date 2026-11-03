@@ -202,6 +202,11 @@ fun AdminPanel() {
                 onMessage = { message = it }
             )
 
+            AdminAttendanceSection(
+                repository = repository,
+                onMessage = { message = it }
+            )
+
             accounts.forEach { account ->
                 var localMemberId by remember(account.uid) { mutableStateOf("") }
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -246,6 +251,141 @@ fun AdminPanel() {
         }
     } else if (FirebaseAuth.getInstance().currentUser != null) {
         Text("Administrator access only.", modifier = Modifier.padding(top = 12.dp), color = MaterialTheme.colorScheme.error)
+    }
+}
+
+@Composable
+private fun AdminAttendanceSection(
+    repository: ClubRepository,
+    onMessage: (String) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var rides by remember { mutableStateOf<List<ClubRide>>(emptyList()) }
+    var members by remember { mutableStateOf<List<ClubMember>>(emptyList()) }
+    var selectedRideId by remember { mutableStateOf<String?>(null) }
+    var attendance by remember { mutableStateOf<Map<String, ClubAttendance>>(emptyMap()) }
+    var loading by remember { mutableStateOf(true) }
+    var savingMemberId by remember { mutableStateOf<String?>(null) }
+
+    suspend fun reload() {
+        rides = repository.getRides()
+        members = repository.getAllMembers()
+        val currentRideId = selectedRideId
+        if (currentRideId != null) attendance = repository.getRideAttendance(currentRideId)
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            reload()
+        } catch (e: Exception) {
+            onMessage(e.localizedMessage ?: "Attendance data could not be loaded.")
+        } finally {
+            loading = false
+        }
+    }
+
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(
+            Modifier.fillMaxWidth().padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text("Ride attendance", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    enabled = !loading,
+                    onClick = {
+                        scope.launch {
+                            loading = true
+                            try {
+                                reload()
+                                onMessage("Attendance list refreshed.")
+                            } catch (e: Exception) {
+                                onMessage(e.localizedMessage ?: "Refresh failed.")
+                            } finally {
+                                loading = false
+                            }
+                        }
+                    }
+                ) { Text("Refresh") }
+            }
+
+            if (loading) {
+                CircularProgressIndicator()
+            } else if (rides.isEmpty()) {
+                Text("Publish a ride first to record attendance.")
+            } else {
+                rides.forEach { ride ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(ride.title, style = MaterialTheme.typography.bodyLarge)
+                            Text("${ride.date} • ${ride.location}", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Button(onClick = {
+                            selectedRideId = ride.id
+                            scope.launch {
+                                try {
+                                    attendance = repository.getRideAttendance(ride.id)
+                                } catch (e: Exception) {
+                                    onMessage(e.localizedMessage ?: "Could not load this ride's attendance.")
+                                }
+                            }
+                        }) {
+                            Text(if (selectedRideId == ride.id) "Selected" else "Manage")
+                        }
+                    }
+                }
+            }
+
+            val selectedRide = rides.firstOrNull { it.id == selectedRideId }
+            if (selectedRide != null) {
+                Text("Attendance: ${selectedRide.title}", style = MaterialTheme.typography.titleSmall)
+                Text("${attendance.values.count { it.attended }} / ${members.size} present")
+                if (members.isEmpty()) {
+                    Text("No member records found in Firestore yet.")
+                } else {
+                    members.forEach { member ->
+                        val isPresent = attendance[member.id]?.attended == true
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            androidx.compose.material3.Checkbox(
+                                checked = isPresent,
+                                enabled = savingMemberId != member.id,
+                                onCheckedChange = { checked ->
+                                    val previous = attendance[member.id]
+                                    attendance = attendance + (
+                                        member.id to ClubAttendance(member.id, member.name, checked)
+                                    )
+                                    savingMemberId = member.id
+                                    scope.launch {
+                                        try {
+                                            repository.setRideAttendance(selectedRide.id, member, checked)
+                                        } catch (e: Exception) {
+                                            attendance = if (previous == null) {
+                                                attendance - member.id
+                                            } else {
+                                                attendance + (member.id to previous)
+                                            }
+                                            onMessage(e.localizedMessage ?: "Attendance could not be saved.")
+                                        } finally {
+                                            savingMemberId = null
+                                        }
+                                    }
+                                }
+                            )
+                            Column {
+                                Text(member.name, style = MaterialTheme.typography.bodyMedium)
+                                Text(member.badge, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
