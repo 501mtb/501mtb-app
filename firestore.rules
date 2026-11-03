@@ -1,0 +1,90 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function hasUserRecord() {
+      return signedIn() && exists(userPath(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return hasUserRecord()
+        && get(userPath(request.auth.uid)).data.role == "ADMIN";
+    }
+
+    function isApprovedMember() {
+      return hasUserRecord()
+        && get(userPath(request.auth.uid)).data.approvalStatus == "APPROVED";
+    }
+
+    function isOwnUser(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwnUser(uid) || isAdmin();
+
+      // New accounts may create only a pending USER record.
+      allow create: if isOwnUser(uid)
+        && request.resource.data.role == "USER"
+        && request.resource.data.approvalStatus == "PENDING"
+        && request.resource.data.uid == request.auth.uid;
+
+      // Users cannot approve themselves, assign roles, or change member links.
+      allow update, delete: if isAdmin();
+    }
+
+    match /members/{memberId} {
+      allow read: if resource.data.publicProfile == true || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /memberLinks/{memberId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /rides/{rideId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+
+      match /registrations/{uid} {
+        allow read: if isAdmin() || isOwnUser(uid);
+        allow create: if isOwnUser(uid) && isApprovedMember();
+        allow update, delete: if isAdmin() || (isOwnUser(uid) && isApprovedMember());
+      }
+
+      match /attendance/{memberId} {
+        allow read: if isAdmin()
+          || (isApprovedMember()
+            && get(userPath(request.auth.uid)).data.memberId == memberId);
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /publicStats/{documentId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /adminLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
