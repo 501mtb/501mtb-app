@@ -210,7 +210,11 @@ private fun HomeScreen() {
                                 null
                             )
                             auth.signInWithCredential(firebaseCredential).await()
-                            ClubRepository().ensurePendingAccount()
+                            try {
+                                ClubRepository().ensurePendingAccount()
+                            } catch (profileError: Exception) {
+                                authMessage = "Google sign-in succeeded. Your member profile will be created when Firestore is ready."
+                            }
                         } else {
                             authMessage = "Google did not return a valid sign-in credential. Please try again."
                         }
