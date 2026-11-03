@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -47,6 +48,7 @@ data class FeedPost(
     val authorName: String,
     val caption: String,
     val imageUrl: String,
+    val storagePath: String,
     val visibility: String
 )
 
@@ -86,6 +88,7 @@ fun FeedScreen() {
                 authorName = doc.getString("authorName") ?: "501MTB member",
                 caption = doc.getString("caption") ?: "",
                 imageUrl = imageUrl,
+                storagePath = doc.getString("storagePath") ?: "",
                 visibility = doc.getString("visibility") ?: "COMMUNITY"
             )
         }
@@ -217,7 +220,7 @@ fun FeedScreen() {
                                     scope.launch {
                                         try {
                                             db.collection("feedPosts").document(post.id).delete().await()
-                                            runCatching { storage.reference.child("feed/${post.authorUid}/").child(post.imageUrl.substringAfterLast('/').substringBefore('?')).delete().await() }
+                                            if (post.storagePath.isNotBlank()) storage.reference.child(post.storagePath).delete().await()
                                             refreshFeed()
                                             message = "Publication deleted."
                                         } catch (e: Exception) {
