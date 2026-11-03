@@ -1,0 +1,34 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function userPath(uid) {
+      return /databases/(default)/documents/users/$(uid);
+    }
+    function isAdmin() {
+      return signedIn()
+        && firestore.exists(userPath(request.auth.uid))
+        && firestore.get(userPath(request.auth.uid)).data.role == "ADMIN";
+    }
+    function isApprovedMember() {
+      return signedIn()
+        && firestore.exists(userPath(request.auth.uid))
+        && firestore.get(userPath(request.auth.uid)).data.approvalStatus == "APPROVED";
+    }
+
+    // Feed photos are stored in the uploader's own folder.
+    match /feed/{uid}/{fileName} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && (isApprovedMember() || isAdmin())
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if signedIn()
+        && request.auth.uid == uid
+        && (isApprovedMember() || isAdmin());
+      allow update: if false;
+    }
+  }
+}
