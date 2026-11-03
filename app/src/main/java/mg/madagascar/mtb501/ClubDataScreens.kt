@@ -249,8 +249,6 @@ fun AdminPanel() {
             }
             message?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
         }
-    } else if (FirebaseAuth.getInstance().currentUser != null) {
-        Text("Administrator access only.", modifier = Modifier.padding(top = 12.dp), color = MaterialTheme.colorScheme.error)
     }
 }
 
