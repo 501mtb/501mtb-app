@@ -113,7 +113,6 @@ fun AdminRiderManagementScreen() {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                item { AdminPhotoLibrarySection(onMessage = { message = it }) }
                 when {
                     members.isEmpty() -> item { Text("No member records found.") }
                     filteredMembers.isEmpty() -> item { Text("No matching members.") }
@@ -152,6 +151,7 @@ fun AdminRiderManagementScreen() {
                         )
                     }
                 }
+                item { AdminPhotoLibrarySection(onMessage = { message = it }) }
             }
         }
     }
