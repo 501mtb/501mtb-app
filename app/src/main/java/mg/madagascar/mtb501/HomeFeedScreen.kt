@@ -28,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInNew
@@ -649,24 +650,27 @@ private fun RideActions(
     onOpen: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+        modifier = Modifier.fillMaxWidth().height(38.dp).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        TextButton(onClick = onFire) {
-            Icon(Icons.Default.Favorite, contentDescription = null,
-                tint = if (isFired) Color(0xFFFF4D4D) else MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(if (isFired) "FIRED" else "FIRE")
+        IconButton(onClick = onFire, modifier = Modifier.size(34.dp)) {
+            Icon(Icons.Default.Favorite, contentDescription = if (isFired) "Remove Fire reaction" else "Fire",
+                tint = if (isFired) Color(0xFFFF4D4D) else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(19.dp))
         }
-        TextButton(onClick = onComment) {
-            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null)
-            Text("COMMENT")
+        IconButton(onClick = onComment, modifier = Modifier.size(34.dp)) {
+            Icon(Icons.Default.ChatBubbleOutline, contentDescription = "Comments",
+                modifier = Modifier.size(19.dp))
         }
-        TextButton(onClick = onShare) {
-            Icon(Icons.Default.Share, contentDescription = null)
-            Text("SHARE")
+        IconButton(onClick = onShare, modifier = Modifier.size(34.dp)) {
+            Icon(Icons.Default.Share, contentDescription = "Share",
+                modifier = Modifier.size(19.dp))
         }
-        TextButton(onClick = onOpen) { Text("DETAILS") }
+        IconButton(onClick = onOpen, modifier = Modifier.size(34.dp)) {
+            Icon(Icons.Default.ArrowForward, contentDescription = "Ride details",
+                modifier = Modifier.size(19.dp))
+        }
     }
 }
 
