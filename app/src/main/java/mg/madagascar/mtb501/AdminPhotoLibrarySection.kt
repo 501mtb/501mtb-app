@@ -13,7 +13,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -50,8 +53,9 @@ fun AdminPhotoLibrarySection(
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedTarget by remember { mutableStateOf(photoTargets.first().first) }
-    var targetMenuExpanded by remember { mutableStateOf(false) }
     var selectedPhotos by remember { mutableStateOf<List<PhotoLibraryImage>>(emptyList()) }
+    var photoFieldsVisible by remember { mutableStateOf(false) }
+    var openTargetMenu by remember { mutableStateOf<String?>(null) }
 
     suspend fun reload() {
         loading = true
@@ -113,29 +117,45 @@ fun AdminPhotoLibrarySection(
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                "Photo files stay on GitHub Pages. Firestore stores only selected photo references, never image files.",
+                "Photo files stay on GitHub Pages. Firestore stores only selected photo references.",
                 style = MaterialTheme.typography.bodySmall
             )
 
-            OutlinedButton(onClick = { targetMenuExpanded = true }) {
-                Text("Target: ${photoTargets.firstOrNull { it.first == selectedTarget }?.second ?: selectedTarget}")
-            }
-            DropdownMenu(
-                expanded = targetMenuExpanded,
-                onDismissRequest = { targetMenuExpanded = false }
-            ) {
-                photoTargets.forEach { (id, label) ->
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = {
-                            selectedTarget = id
-                            selectedPhotos = emptyList()
-                            targetMenuExpanded = false
-                        }
+            Text("Photo fields", style = MaterialTheme.typography.titleSmall)
+            photoTargets.forEach { (targetId, targetLabel) ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        targetLabel,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium
                     )
+                    androidx.compose.foundation.layout.Box {
+                        IconButton(onClick = { openTargetMenu = targetId }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Options for $targetLabel")
+                        }
+                        DropdownMenu(
+                            expanded = openTargetMenu == targetId,
+                            onDismissRequest = { openTargetMenu = null }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Change photo") },
+                                onClick = {
+                                    selectedTarget = targetId
+                                    selectedPhotos = emptyList()
+                                    photoFieldsVisible = true
+                                    openTargetMenu = null
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
+            if (photoFieldsVisible) {
             Text("Required ratio: $requiredRatio", style = MaterialTheme.typography.labelLarge)
             if (isSlideshow) {
                 Text("PDC slideshow: tap several photos to select them. Their order follows your selection.", style = MaterialTheme.typography.bodySmall)
@@ -248,6 +268,7 @@ fun AdminPhotoLibrarySection(
                         onClick = { scope.launch { reload() } }
                     ) { Text("Refresh library") }
                 }
+            }
             }
         }
     }

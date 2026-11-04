@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -93,6 +94,10 @@ fun RiderProfileScreen() {
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = { auth.signOut() }, modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                Icon(Icons.Default.Logout, contentDescription = "Sign out", tint = MaterialTheme.colorScheme.primary)
+            }
+            Spacer(Modifier.size(8.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("Rider Profile", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text("Your personal MTB journey", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

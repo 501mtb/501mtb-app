@@ -1,13 +1,20 @@
 package mg.madagascar.mtb501
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -38,6 +46,7 @@ private val memberBadgeOptions = listOf(
 @Composable
 fun AdminRiderManagementScreen() {
     val repository = remember { ClubRepository() }
+    val auth = remember { com.google.firebase.auth.FirebaseAuth.getInstance() }
     val scope = rememberCoroutineScope()
     var members by remember { mutableStateOf<List<ClubMember>>(emptyList()) }
     var search by remember { mutableStateOf("") }
@@ -74,8 +83,15 @@ fun AdminRiderManagementScreen() {
         modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text("Member Management", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
-        Text("All registered 501MTB members • Manual administration", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { auth.signOut() }, modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                Icon(Icons.Default.Logout, contentDescription = "Sign out", tint = MaterialTheme.colorScheme.primary)
+            }
+            Column(Modifier.weight(1f).padding(start = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Member Management", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                Text("All registered 501MTB members • Manual administration", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         OutlinedTextField(
             value = search,
             onValueChange = { search = it },
@@ -113,7 +129,6 @@ fun AdminRiderManagementScreen() {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                item { AdminPhotoLibrarySection(onMessage = { message = it }) }
                 when {
                     members.isEmpty() -> item { Text("No member records found.") }
                     filteredMembers.isEmpty() -> item { Text("No matching members.") }
@@ -152,6 +167,7 @@ fun AdminRiderManagementScreen() {
                         )
                     }
                 }
+                item { AdminPhotoLibrarySection(onMessage = { message = it }) }
             }
         }
     }
