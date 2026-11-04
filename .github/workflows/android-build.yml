@@ -1,4 +1,4 @@
-name: Android build and latest test APK
+name: Android build and latest signed APK
 
 on:
   push:
@@ -36,32 +36,60 @@ jobs:
       - name: Install Android platform
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Build debug APK
+      - name: Build debug APK for CI verification
         run: gradle assembleDebug
 
-      - name: Upload APK as workflow artifact
+      - name: Upload debug CI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 501mtb-app-debug
+          name: 501mtb-app-debug-ci
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 14
 
-      - name: Prepare friendly APK filename
+      - name: Check release signing secrets
         if: github.ref == 'refs/heads/feature/shared-photo-library' && github.event_name != 'pull_request'
-        run: cp app/build/outputs/apk/debug/app-debug.apk 501MTB.apk
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::Permanent Android signing is not configured. Add the four ANDROID_* repository secrets before publishing an installable update."
+            exit 1
+          fi
 
-      - name: Publish latest test APK for the website
+      - name: Decode permanent Android signing key
+        if: github.ref == 'refs/heads/feature/shared-photo-library' && github.event_name != 'pull_request'
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/501mtb-release.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/501mtb-release.jks" >> "$GITHUB_ENV"
+
+      - name: Build permanently signed release APK
+        if: github.ref == 'refs/heads/feature/shared-photo-library' && github.event_name != 'pull_request'
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: gradle assembleRelease
+
+      - name: Prepare download filename
+        if: github.ref == 'refs/heads/feature/shared-photo-library' && github.event_name != 'pull_request'
+        run: cp app/build/outputs/apk/release/app-release.apk 501MTB.apk
+
+      - name: Publish latest signed APK
         if: github.ref == 'refs/heads/feature/shared-photo-library' && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest-test
           target_commitish: ${{ github.sha }}
-          name: 501MTB App — Latest test build
+          name: 501MTB App — Latest signed test build
           body: |
-            Latest automatically generated test APK from feature/shared-photo-library.
-
-            This is a development build, not a production release.
+            Latest automatically generated, permanently signed Android test build.
+            Install this APK over the previous app to update it without uninstalling.
           prerelease: true
           make_latest: false
           files: 501MTB.apk
