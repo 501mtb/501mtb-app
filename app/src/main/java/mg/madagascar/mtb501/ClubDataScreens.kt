@@ -197,8 +197,6 @@ fun AdminPanel() {
             Text("Pending account approvals: ${accounts.size}")
             if (accounts.isEmpty()) Text("No accounts waiting for approval.")
 
-            OfficialMemberAdminSection(onMessage = { message = it })
-
             AdminPublishingSection(
                 repository = repository,
                 onMessage = { message = it }
@@ -210,30 +208,16 @@ fun AdminPanel() {
             )
 
             accounts.forEach { account ->
-                var localMemberId by remember(account.uid) { mutableStateOf("") }
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(account.displayName.ifBlank { "New member" }, style = MaterialTheme.typography.titleMedium)
                         Text(account.email, style = MaterialTheme.typography.bodySmall)
-                        androidx.compose.material3.OutlinedTextField(
-                            value = localMemberId,
-                            onValueChange = { localMemberId = it },
-                            label = { Text("Official member ID (required)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        Text(
-                            "Choose an existing ID from the official register. One member can be linked to only one Google account.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("501MTB ID: ${account.memberId.ifBlank { "Not assigned" }}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                enabled = localMemberId.isNotBlank(),
-                                onClick = {
+                            Button(onClick = {
                                 scope.launch {
                                     try {
-                                        repository.reviewAccount(account.uid, true, localMemberId.trim().uppercase())
+                                        repository.reviewAccount(account.uid, true)
                                         message = "Account approved."
                                         refresh()
                                     } catch (e: Exception) {
