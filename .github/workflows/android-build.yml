@@ -49,3 +49,26 @@ jobs:
           name: 501mtb-app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+  firestore-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Java for Firestore Emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Firestore rules test dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run Firestore rules tests in Emulator
+        run: npx firebase-tools emulators:exec --only firestore --project demo-501mtb "npm test"

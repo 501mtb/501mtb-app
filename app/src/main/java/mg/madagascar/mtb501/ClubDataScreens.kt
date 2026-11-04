@@ -208,23 +208,16 @@ fun AdminPanel() {
             )
 
             accounts.forEach { account ->
-                var localMemberId by remember(account.uid) { mutableStateOf("") }
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(account.displayName.ifBlank { "New member" }, style = MaterialTheme.typography.titleMedium)
                         Text(account.email, style = MaterialTheme.typography.bodySmall)
-                        androidx.compose.material3.OutlinedTextField(
-                            value = localMemberId,
-                            onValueChange = { localMemberId = it },
-                            label = { Text("Existing member ID (optional)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
+                        Text("501MTB ID: ${account.memberId.ifBlank { "Not assigned" }}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = {
                                 scope.launch {
                                     try {
-                                        repository.reviewAccount(account.uid, true, localMemberId.trim().ifBlank { null })
+                                        repository.reviewAccount(account.uid, true)
                                         message = "Account approved."
                                         refresh()
                                     } catch (e: Exception) {

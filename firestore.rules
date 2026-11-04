@@ -10,6 +10,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(uid);
     }
 
+    function counterPath() {
+      return /databases/$(database)/documents/counters/memberSequence;
+    }
+
     function hasUserRecord() {
       return signedIn() && exists(userPath(request.auth.uid));
     }
@@ -28,22 +32,83 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    // Convert the numeric sequence into the exact zero-padded R-### format.
+    function formatMemberId(number) {
+      return number < 10
+        ? "R-00" + string(number)
+        : number < 100
+          ? "R-0" + string(number)
+          : "R-" + string(number);
+    }
+
+    // The ID must match the numeric counter, not merely a client-supplied string.
+    function assignedIdMatchesCounter(uid, memberId) {
+      let counter = getAfter(counterPath()).data;
+      return counter.lastIssued is int
+        && counter.lastIssued >= 1
+        && counter.lastIssued <= 999
+        && counter.lastIssuedId == formatMemberId(counter.lastIssued)
+        && counter.lastIssuedId == memberId
+        && counter.lastIssuedBy == uid;
+    }
+
     match /users/{uid} {
       allow read: if isOwnUser(uid) || isAdmin();
 
-      // A new Google account can create only its own pending USER profile.
-      // No memberId, role escalation, approval, or arbitrary extra fields.
+      // New accounts receive their R-### ID in the same atomic transaction as the counter.
       allow create: if isOwnUser(uid)
         && request.resource.data.keys().hasOnly([
           "uid", "email", "displayName", "photoURL", "role",
-          "approvalStatus", "createdAt"
+          "approvalStatus", "memberId", "createdAt"
         ])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.role == "USER"
-        && request.resource.data.approvalStatus == "PENDING";
+        && request.resource.data.approvalStatus == "PENDING"
+        && request.resource.data.memberId is string
+        && request.resource.data.memberId.matches("R-[0-9]{3}")
+        && assignedIdMatchesCounter(uid, request.resource.data.memberId);
 
-      // Only an administrator can approve accounts or link legacy member records.
-      allow update, delete: if isAdmin();
+      // Existing profiles without an ID may receive one; other account changes remain admin-only.
+      allow update: if isAdmin()
+        || (isOwnUser(uid)
+          && (!resource.data.keys().hasAny(["memberId"])
+            || resource.data.memberId == null
+            || resource.data.memberId == "")
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["memberId"])
+          && request.resource.data.memberId is string
+          && request.resource.data.memberId.matches("R-[0-9]{3}")
+          && assignedIdMatchesCounter(uid, request.resource.data.memberId));
+
+      allow delete: if isAdmin();
+    }
+
+    match /counters/{counterId} {
+      allow read: if signedIn() && counterId == "memberSequence";
+
+      allow create: if signedIn()
+        && counterId == "memberSequence"
+        && request.resource.data.keys().hasOnly([
+          "lastIssued", "lastIssuedId", "lastIssuedBy"
+        ])
+        && request.resource.data.lastIssued == 1
+        && request.resource.data.lastIssuedId == formatMemberId(1)
+        && request.resource.data.lastIssuedBy == request.auth.uid
+        && getAfter(userPath(request.auth.uid)).data.memberId == request.resource.data.lastIssuedId;
+
+      allow update: if signedIn()
+        && counterId == "memberSequence"
+        && request.resource.data.keys().hasOnly([
+          "lastIssued", "lastIssuedId", "lastIssuedBy"
+        ])
+        && resource.data.lastIssued is int
+        && resource.data.lastIssued >= 1
+        && resource.data.lastIssued < 999
+        && request.resource.data.lastIssued == resource.data.lastIssued + 1
+        && request.resource.data.lastIssuedId == formatMemberId(request.resource.data.lastIssued)
+        && request.resource.data.lastIssuedBy == request.auth.uid
+        && getAfter(userPath(request.auth.uid)).data.memberId == request.resource.data.lastIssuedId;
+
+      allow delete: if false;
     }
 
     match /members/{memberId} {
