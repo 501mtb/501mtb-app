@@ -1,5 +1,6 @@
 package mg.madagascar.mtb501
 
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -76,6 +77,41 @@ class ClubRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) {
+    /** Imports the bundled registry while preserving existing Firestore profile fields. */
+    suspend fun syncMemberRegistry(context: Context): Int {
+        val adminUid = auth.currentUser?.uid ?: error("Administrator sign-in is required.")
+        val admin = db.collection("users").document(adminUid).get().await()
+        require(admin.getString("role") == AppRole.ADMIN.name) { "Administrator permissions are required." }
+        val jsonText = context.assets.open("501mtb_member_registry.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
+        val root = org.json.JSONObject(jsonText)
+        require(root.optString("registry") == "501MTB") { "Invalid member registry." }
+        val members = root.optJSONArray("members") ?: error("The registry has no members.")
+        require(members.length() in 1..500) { "The registry must contain between 1 and 500 members." }
+        val parsed = mutableListOf<Pair<String, Map<String, Any>>>()
+        val seenIds = mutableSetOf<String>()
+        for (index in 0 until members.length()) {
+            val member = members.getJSONObject(index)
+            val legacyId = member.optString("legacyId").trim()
+            val permanentId = member.optString("memberId").trim()
+            val name = member.optString("name").trim()
+            val category = member.optString("category").trim()
+            val gender = member.optString("gender").trim()
+            require(legacyId.isNotBlank() && permanentId.isNotBlank() && name.isNotBlank() && category.isNotBlank() && gender.isNotBlank()) { "Registry entry ${index + 1} is incomplete." }
+            require(seenIds.add(legacyId)) { "Duplicate legacy ID: $legacyId" }
+            parsed.add(legacyId to mapOf(
+                "name" to name, "badge" to category, "category" to category,
+                "gender" to gender, "memberId" to permanentId, "legacyId" to legacyId,
+                "registryVersion" to root.optInt("version", 1),
+                "registryStatus" to root.optString("status", "provisional")
+            ))
+        }
+        val batch = db.batch()
+        parsed.forEach { (legacyId, data) ->
+            batch.set(db.collection("members").document(legacyId), data, com.google.firebase.firestore.SetOptions.merge())
+        }
+        batch.commit().await()
+        return parsed.size
+    }
     suspend fun ensurePendingAccount() {
         val user = auth.currentUser ?: return
         val ref = db.collection("users").document(user.uid)
