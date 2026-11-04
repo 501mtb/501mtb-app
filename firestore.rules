@@ -55,7 +55,7 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    match /rides/{rideId} {
+    // Global member sequence is private and writable only by administrators.\n    match /counters/{counterId} {\n      allow read, write: if isAdmin() && counterId == "memberSequence";\n    }\n\n    match /rides/{rideId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
 
