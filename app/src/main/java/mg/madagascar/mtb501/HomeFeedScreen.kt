@@ -1,13 +1,12 @@
 package mg.madagascar.mtb501
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,344 +18,603 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+
+private data class ShowcaseRide(
+    val id: Int,
+    val date: String,
+    val title: String,
+    val level: String,
+    val time: String,
+    val meeting: String,
+    val distance: String,
+    val completed: Boolean
+)
+
+private data class ShowcaseStory(
+    val id: Int,
+    val name: String,
+    val badge: String,
+    val ride: String,
+    val distance: String,
+    val date: String
+)
 
 /**
- * First implementation pass of UI 1 (Home).
- * Uses the existing rides and public-member registries without changing their schema.
- * Event-specific image assignment, ride GPS coordinates and 501MTB reactions/comments
- * require dedicated data fields and admin publishing workflows in a later pass.
+ * UI 1 is intentionally a local SHOWCASE prototype.
+ * Sample content and all reactions/actions are held in Compose state only.
+ * Nothing on this screen writes to Firestore or publishes to Facebook.
  */
 @Composable
 fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
-    val repository = remember { ClubRepository() }
-    var rides by remember { mutableStateOf<List<ClubRide>>(emptyList()) }
-    var members by remember { mutableStateOf<List<ClubMember>>(emptyList()) }
-    var rideCoverUrl by remember { mutableStateOf<String?>(null) }
-    var eventCoverUrl by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(true) }
-    var selectedRide by remember { mutableStateOf<ClubRide?>(null) }
-    var ridesFailed by remember { mutableStateOf(false) }
-    var membersFailed by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        try {
-            rides = repository.getRides()
-        } catch (_: Exception) {
-            ridesFailed = true
-        }
-        try {
-            members = repository.getPublicMembers().shuffled()
-        } catch (_: Exception) {
-            membersFailed = true
-        }
-        loading = false
+    val nextRides = remember {
+        mutableStateListOf(
+            ShowcaseRide(1, "01 NOV 2026", "LAC ANDOVOLALINA", "INTERMEDIATE", "08:00", "Before Barikadimy", "54 km", false),
+            ShowcaseRide(2, "15 NOV 2026", "IVOLOINA TRAIL RIDE", "ALL LEVELS", "07:30", "Loca Velo Tanamakoa", "32 km", false),
+            ShowcaseRide(3, "29 NOV 2026", "MAKUA FESTIVAL RIDE", "ALL LEVELS", "12:30", "Loca Velo Tanamakoa", "18 km", false)
+        )
+    }
+    val pastEvents = remember {
+        mutableStateListOf(
+            ShowcaseRide(11, "15 OCT 2026", "IVOLOINA • BASSINDRANO", "INTERMEDIATE", "07:00", "Toamasina", "34 km", true),
+            ShowcaseRide(12, "30 AUG 2026", "2ND XC 501MTB RACE", "ELITE", "07:00", "Antanambao TMF", "54 km", true),
+            ShowcaseRide(13, "20 SEP 2026", "TOAMASINA DISCOVERY", "ALL LEVELS", "08:00", "Loca Velo", "26 km", true)
+        )
+    }
+    val stories = remember {
+        mutableStateListOf(
+            ShowcaseStory(21, "NJAKAH", "LEADER", "Ivoloina Trail", "34 km", "15 OCT 2026"),
+            ShowcaseStory(22, "TOKY", "LEADER", "Forest Challenge", "42 km", "12 OCT 2026"),
+            ShowcaseStory(23, "JOE", "SUPER", "Coastal Ride", "28 km", "08 OCT 2026"),
+            ShowcaseStory(24, "MIKA", "SUPER", "Sunday Ride", "31 km", "05 OCT 2026"),
+            ShowcaseStory(25, "SYLVANO", "ELITE", "XC Training", "46 km", "02 OCT 2026"),
+            ShowcaseStory(26, "YAKI", "SUPER", "Ivoloina Trail", "34 km", "28 SEP 2026")
+        )
     }
 
-    // Optional artwork loads separately so a slow GitHub catalogue does not
-    // delay the ride and community content from appearing on screen.
-    LaunchedEffect(Unit) {
-        try {
-            val library = PhotoLibraryRepository().load()
-            val ridePhotoIds = repository.getPhotoAssignment("rides")
-            rideCoverUrl = ridePhotoIds.firstOrNull()?.let { id ->
-                library.imagesForSlot("rides").firstOrNull { it.id == id }?.url
-            }
-            val eventPhotoIds = repository.getPhotoAssignment("events")
-            eventCoverUrl = eventPhotoIds.firstOrNull()?.let { id ->
-                library.imagesForSlot("events").firstOrNull { it.id == id }?.url
-            }
-        } catch (_: Exception) {
-            // Keep the branded placeholders when the online catalogue is unavailable.
-        }
-    }
+    var demoAdmin by remember { mutableStateOf(false) }
+    var selectedRide by remember { mutableStateOf<ShowcaseRide?>(null) }
+    var selectedStory by remember { mutableStateOf<ShowcaseStory?>(null) }
+    var gpsStory by remember { mutableStateOf<ShowcaseStory?>(null) }
+    var profileStory by remember { mutableStateOf<ShowcaseStory?>(null) }
+    var commentsFor by remember { mutableStateOf<String?>(null) }
+    var shareMessage by remember { mutableStateOf<String?>(null) }
+    var adminMessage by remember { mutableStateOf<String?>(null) }
+    val fired = remember { mutableStateMapOf<Int, Boolean>() }
+    val commentCounts = remember { mutableStateMapOf<Int, Int>() }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp)
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Text("501MTB", modifier = Modifier.padding(horizontal = 18.dp),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
-
-        if (loading) {
-            Box(Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("501MTB", style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+                Text("MADAGASCAR • MOUNTAIN BIKING",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-        } else {
-            if (ridesFailed) {
-                SectionLoadError("Ride information is temporarily unavailable.")
-            } else {
-                NextRideSection(
-                    rides.filter { it.status == RideStatus.PLANNED }.sortedBy { it.date },
-                    onRideClick = { selectedRide = it },
-                    coverUrl = rideCoverUrl
-                )
-                PastEventSection(
-                    rides.filter { it.status == RideStatus.COMPLETED }
-                        .sortedByDescending { it.date }.take(50),
-                    onRideClick = { selectedRide = it },
-                    coverUrl = eventCoverUrl
-                )
-            }
-            if (membersFailed) {
-                SectionLoadError("Community information is temporarily unavailable.")
-            } else {
-                CommunitySection(members.take(8))
-            }
-            TextButton(
-                onClick = onOpenCommunityFeed,
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 12.dp)
-            ) {
-                Text("OPEN COMMUNITY FEED")
+            TextButton(onClick = { demoAdmin = !demoAdmin }) {
+                Text(if (demoAdmin) "EXIT ADMIN DEMO" else "ADMIN DEMO")
             }
         }
+
+        if (demoAdmin) {
+            Text(
+                "SHOWCASE ADMIN MODE • actions are demonstrations only",
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+                color = MaterialTheme.colorScheme.tertiary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        ShowcaseSectionHeader("NEXT RIDE", "UPCOMING MTB RIDES", demoAdmin) {
+            adminMessage = "Add a new Next Ride"
+        }
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 18.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            items(nextRides, key = { it.id }) { ride ->
+                NextRideCard(
+                    ride = ride,
+                    admin = demoAdmin,
+                    onOpen = { selectedRide = ride },
+                    onAdmin = { action -> adminMessage = "$action: \${ride.title}" },
+                    onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
+                    isFired = fired[ride.id] ?: false,
+                    onComment = { commentsFor = ride.title },
+                    onShare = { shareMessage = "Share preview: \${ride.title}" }
+                )
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            ShowcaseSectionHeader("PAST EVENT", "MTB EVENT", demoAdmin) {
+                adminMessage = "Add a Past Event"
+            }
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 18.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                items(pastEvents.sortedByDescending { it.id }, key = { it.id }) { ride ->
+                    PastEventCard(
+                        ride = ride,
+                        admin = demoAdmin,
+                        onOpen = { selectedRide = ride },
+                        onAdmin = { action -> adminMessage = "$action: \${ride.title}" },
+                        onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
+                        isFired = fired[ride.id] ?: false,
+                        onComment = { commentsFor = ride.title },
+                        onShare = { shareMessage = "Share preview: \${ride.title}" }
+                    )
+                }
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionHeading("COMMUNITY", "MEMBER RIDE STORIES")
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 18.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(stories.take(8), key = { it.id }) { story ->
+                    CommunityStoryCard(
+                        story = story,
+                        admin = demoAdmin,
+                        isFired = fired[story.id] ?: false,
+                        onOpen = { selectedStory = story },
+                        onFire = { fired[story.id] = !(fired[story.id] ?: false) },
+                        onGps = { gpsStory = story },
+                        onProfile = { profileStory = story },
+                        onAdmin = { adminMessage = "$it: \${story.name}" }
+                    )
+                }
+            }
+        }
+
+        OutlinedButton(
+            onClick = onOpenCommunityFeed,
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 10.dp)
+        ) { Text("OPEN COMMUNITY FEED") }
     }
 
     selectedRide?.let { ride ->
-        val detailCover = if (ride.status == RideStatus.COMPLETED) eventCoverUrl else rideCoverUrl
-        RideDetailsDialog(
+        RideShowcaseDialog(
             ride = ride,
-            coverUrl = detailCover,
+            isFired = fired[ride.id] ?: false,
+            onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
+            onComment = { commentsFor = ride.title },
+            onShare = { shareMessage = "Share preview: \${ride.title}" },
             onDismiss = { selectedRide = null }
+        )
+    }
+    selectedStory?.let { story ->
+        StoryDetailDialog(
+            story = story,
+            isFired = fired[story.id] ?: false,
+            onFire = { fired[story.id] = !(fired[story.id] ?: false) },
+            onComment = { commentsFor = story.ride },
+            onGps = { gpsStory = story },
+            onProfile = { profileStory = story },
+            onDismiss = { selectedStory = null }
+        )
+    }
+    gpsStory?.let { story ->
+        ShowcaseMessageDialog(
+            title = "GPS TRACK • \${story.ride}",
+            message = "A GPS route preview for \${story.name} will appear here. This is a visual demo; no real GPX track is connected.",
+            onDismiss = { gpsStory = null }
+        )
+    }
+    profileStory?.let { story ->
+        ShowcaseMessageDialog(
+            title = "\${story.name} • RIDER PROFILE",
+            message = "501MTB member profile preview\\nBadge: \${story.badge}\\nLatest ride: \${story.ride}\\nDistance: \${story.distance}",
+            onDismiss = { profileStory = null }
+        )
+    }
+    commentsFor?.let { target ->
+        var draft by remember(target) { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { commentsFor = null },
+            title = { Text("501MTB COMMENTS") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(target, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text("No comments yet. Be the first to join the conversation.")
+                    androidx.compose.material3.OutlinedTextField(
+                        value = draft, onValueChange = { draft = it },
+                        modifier = Modifier.fillMaxWidth(), label = { Text("Write a demo comment") }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    commentCounts[ target.hashCode() ] = (commentCounts[target.hashCode()] ?: 0) + 1
+                    commentsFor = null
+                }) { Text("POST DEMO COMMENT") }
+            },
+            dismissButton = { TextButton(onClick = { commentsFor = null }) { Text("CLOSE") } }
+        )
+    }
+    shareMessage?.let { message ->
+        ShowcaseMessageDialog(
+            title = "FACEBOOK SHARE PREVIEW",
+            message = "$message\\n\\nThis preview does not publish anything to Facebook.",
+            onDismiss = { shareMessage = null }
+        )
+    }
+    adminMessage?.let { message ->
+        ShowcaseMessageDialog(
+            title = "ADMIN SHOWCASE",
+            message = "$message\\n\\nThis is a UI demonstration. Create, edit and delete are not saved.",
+            onDismiss = { adminMessage = null }
         )
     }
 }
 
 @Composable
-private fun NextRideSection(
-    rides: List<ClubRide>,
-    onRideClick: (ClubRide) -> Unit,
-    coverUrl: String?
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionHeading("NEXT RIDE")
-        if (rides.isEmpty()) {
-            EmptySectionMessage("No upcoming ride published yet.")
-        } else {
-            LazyRow(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 18.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(rides, key = { it.id }) { ride ->
-                    Card(
-                        modifier = Modifier.width(310.dp).clickable { onRideClick(ride) },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column {
-                            RidePhotoPlaceholder(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f), coverUrl)
-                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                Text(ride.date, color = MaterialTheme.colorScheme.primary,
-                                    style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                                Text(ride.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                                Text("${ride.type} • ${ride.location}", style = MaterialTheme.typography.bodyMedium)
-                                Text("Open ride details  →", style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PastEventSection(
-    rides: List<ClubRide>,
-    onRideClick: (ClubRide) -> Unit,
-    coverUrl: String?
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionHeading("PAST EVENT")
-        Text("MTB Event", modifier = Modifier.padding(horizontal = 18.dp),
-            style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-        if (rides.isEmpty()) {
-            EmptySectionMessage("Completed rides will appear here.")
-        } else {
-            LazyRow(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 18.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(rides, key = { it.id }) { ride ->
-                    Card(
-                        modifier = Modifier.width(240.dp).clickable { onRideClick(ride) },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column {
-                            RidePhotoPlaceholder(ride.title, Modifier.fillMaxWidth().aspectRatio(4f / 3f), coverUrl)
-                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(ride.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Text("${ride.distanceKm} km • ${ride.date}",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CommunitySection(members: List<ClubMember>) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionHeading("COMMUNITY")
-        if (members.isEmpty()) {
-            EmptySectionMessage("Rider stories will appear here.")
-        } else {
-            LazyRow(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 18.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(members, key = { it.id }) { member ->
-                    Column(Modifier.width(142.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f)
-                            .clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                            if (!member.photoURL.isNullOrBlank()) {
-                                AsyncImage(model = member.photoURL, contentDescription = member.name,
-                                    modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                            } else {
-                                Text("501MTB", modifier = Modifier.align(Alignment.Center),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Black)
-                            }
-                            AssistChip(onClick = { }, label = { Text(member.badge) },
-                                modifier = Modifier.align(Alignment.TopStart).padding(5.dp))
-                            Text("PROFILE →", modifier = Modifier.align(Alignment.BottomEnd)
-                                .padding(8.dp).background(Color.Black.copy(alpha = 0.72f), RoundedCornerShape(6.dp))
-                                .padding(horizontal = 7.dp, vertical = 5.dp),
-                                color = Color.White, style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold)
-                        }
-                        Text(member.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RidePhotoPlaceholder(
+private fun ShowcaseSectionHeader(
     title: String,
-    modifier: Modifier = Modifier,
-    imageUrl: String? = null
+    subtitle: String,
+    admin: Boolean,
+    onAdd: () -> Unit
 ) {
-    Box(
-        modifier.background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        if (!imageUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Text(
-                "501MTB",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Black
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+            Text(subtitle, style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (admin) TextButton(onClick = onAdd) { Text("+ ADD") }
+    }
+}
+
+@Composable
+private fun SectionHeading(title: String, subtitle: String) {
+    Column(modifier = Modifier.padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        Text(title, style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+        Text(subtitle, style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun NextRideCard(
+    ride: ShowcaseRide,
+    admin: Boolean,
+    onOpen: () -> Unit,
+    onAdmin: (String) -> Unit,
+    onFire: () -> Unit,
+    isFired: Boolean,
+    onComment: () -> Unit,
+    onShare: () -> Unit
+) {
+    var menu by remember { mutableStateOf(false) }
+    Card(
+        modifier = Modifier.width(318.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column {
+            Box {
+                PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clickable(onClick = onOpen), 0)
+                Row(
+                    modifier = Modifier.align(Alignment.TopStart).fillMaxWidth().padding(9.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(
+                        modifier = Modifier.clip(RoundedCornerShape(9.dp))
+                            .background(Color.Black.copy(alpha = .78f)).padding(9.dp),
+                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Text(ride.date, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
+                        Text(ride.title, color = Color.White, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, maxLines = 2)
+                        Text("\${ride.level}  •  \${ride.time}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                        Text("MEET: \${ride.meeting}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                    }
+                    if (admin) AdminMenuButton(onAction = { onAdmin(it) })
+                }
+            }
+            RideActions(ride.id, isFired, onFire, onComment, onShare, onOpen)
         }
     }
 }
 
 @Composable
-private fun SectionHeading(title: String) {
-    Text(title, modifier = Modifier.padding(horizontal = 18.dp),
-        style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.Black)
-}
-
-@Composable
-private fun EmptySectionMessage(message: String) {
-    Box(
-        Modifier.fillMaxWidth().padding(horizontal = 18.dp).height(76.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center
+private fun PastEventCard(
+    ride: ShowcaseRide,
+    admin: Boolean,
+    onOpen: () -> Unit,
+    onAdmin: (String) -> Unit,
+    onFire: () -> Unit,
+    isFired: Boolean,
+    onComment: () -> Unit,
+    onShare: () -> Unit
+) {
+    Card(
+        modifier = Modifier.width(258.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Text(message, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium)
+        Column {
+            Box {
+                PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clickable(onClick = onOpen), 1)
+                if (admin) {
+                    Box(Modifier.align(Alignment.TopEnd).padding(5.dp)) {
+                        AdminMenuButton(onAction = onAdmin)
+                    }
+                }
+                Column(
+                    modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth()
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .88f))))
+                        .padding(11.dp)
+                ) {
+                    Text(ride.title, color = Color.White, style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text("\${ride.distance}  •  \${ride.date}", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+            RideActions(ride.id, isFired, onFire, onComment, onShare, onOpen)
+        }
     }
 }
 
 @Composable
-private fun SectionLoadError(message: String) {
-    Text(
-        message,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
-        color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.bodySmall
-    )
+private fun CommunityStoryCard(
+    story: ShowcaseStory,
+    admin: Boolean,
+    isFired: Boolean,
+    onOpen: () -> Unit,
+    onFire: () -> Unit,
+    onGps: () -> Unit,
+    onProfile: () -> Unit,
+    onAdmin: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.width(164.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f)) {
+            PhotoArtwork(story.name, Modifier.fillMaxSize().clickable(onClick = onOpen), 2)
+            Column(
+                modifier = Modifier.align(Alignment.TopStart).padding(7.dp)
+                    .clip(RoundedCornerShape(7.dp)).background(Color.Black.copy(alpha = .76f)).padding(7.dp)
+            ) {
+                Text(story.badge, color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black)
+            }
+            if (admin) Box(Modifier.align(Alignment.TopEnd).padding(3.dp)) {
+                AdminMenuButton(onAction = onAdmin)
+            }
+            Column(
+                modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth()
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .92f))))
+                    .padding(horizontal = 9.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Text(story.name, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                Text("\${story.ride} • \${story.distance}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onFire, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Favorite, contentDescription = "Fire reaction",
+                            tint = if (isFired) Color(0xFFFF4D4D) else Color.White, modifier = Modifier.size(18.dp))
+                    }
+                    IconButton(onClick = onGps, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.GpsFixed, contentDescription = "GPS track", tint = Color.White, modifier = Modifier.size(18.dp))
+                    }
+                    TextButton(onClick = onProfile, contentPadding = PaddingValues(0.dp)) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
+                        Text("PROFILE", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
-private fun RideDetailsDialog(
-    ride: ClubRide,
-    coverUrl: String?,
+private fun RideActions(
+    id: Int,
+    isFired: Boolean,
+    onFire: () -> Unit,
+    onComment: () -> Unit,
+    onShare: () -> Unit,
+    onOpen: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        TextButton(onClick = onFire) {
+            Icon(Icons.Default.Favorite, contentDescription = null,
+                tint = if (isFired) Color(0xFFFF4D4D) else MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (isFired) "FIRED" else "FIRE")
+        }
+        TextButton(onClick = onComment) {
+            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null)
+            Text("COMMENT")
+        }
+        TextButton(onClick = onShare) {
+            Icon(Icons.Default.Share, contentDescription = null)
+            Text("SHARE")
+        }
+        TextButton(onClick = onOpen) { Text("DETAILS") }
+    }
+}
+
+@Composable
+private fun AdminMenuButton(onAction: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }, modifier = Modifier.size(34.dp)
+            .clip(CircleShape).background(Color.Black.copy(alpha = .72f))) {
+            Icon(Icons.Default.MoreVert, contentDescription = "Admin options", tint = Color.White)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            listOf("Edit", "Delete").forEach { action ->
+                DropdownMenuItem(text = { Text(action) }, onClick = {
+                    expanded = false
+                    onAction(action)
+                })
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotoArtwork(title: String, modifier: Modifier = Modifier, variant: Int) {
+    val colors = when (variant % 3) {
+        0 -> listOf(Color(0xFF102A20), Color(0xFF527A42), Color(0xFF17251C))
+        1 -> listOf(Color(0xFF172C38), Color(0xFF66816B), Color(0xFF18231F))
+        else -> listOf(Color(0xFF263B2B), Color(0xFF7D8750), Color(0xFF1C2B22))
+    }
+    Box(
+        modifier = modifier.background(Brush.linearGradient(colors)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text("501", color = Color.White.copy(alpha = .92f), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black)
+            Text("MTB  •  MADAGASCAR", color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text(title, color = Color.White.copy(alpha = .85f), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+private fun RideShowcaseDialog(
+    ride: ShowcaseRide,
+    isFired: Boolean,
+    onFire: () -> Unit,
+    onComment: () -> Unit,
+    onShare: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(ride.title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (!coverUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = coverUrl,
-                        contentDescription = ride.title,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)), if (ride.completed) 1 else 0)
                 Text(ride.date, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                Text("${ride.distanceKm} km")
-                Text("Meeting point: ${ride.location}")
-                Text("Category: ${ride.type}")
-                Text(
-                    if (ride.status == RideStatus.COMPLETED) "PAST EVENT" else "UPCOMING RIDE",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("\${ride.distance}  •  \${ride.level}")
+                Text("TIME: \${ride.time}")
+                Text("MEETING POINT: \${ride.meeting}")
+                Divider()
+                Text("PHOTO GALLERY", fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(3) { index ->
+                        PhotoArtwork("PHOTO \${index + 1}", Modifier.weight(1f).aspectRatio(1f), index)
+                    }
+                }
+                Text("501MTB reactions and comments are shown here in the finished app.")
             }
         },
         confirmButton = {
-            if (!ride.facebookLink.isNullOrBlank()) {
-                TextButton(onClick = {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ride.facebookLink)))
-                }) { Text("VIEW FACEBOOK ALBUM") }
+            Row {
+                TextButton(onClick = onFire) { Text(if (isFired) "FIRED" else "FIRE") }
+                TextButton(onClick = onComment) { Text("COMMENTS") }
+                TextButton(onClick = onShare) { Text("SHARE") }
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("CLOSE") } }
+    )
+}
+
+@Composable
+private fun StoryDetailDialog(
+    story: ShowcaseStory,
+    isFired: Boolean,
+    onFire: () -> Unit,
+    onComment: () -> Unit,
+    onGps: () -> Unit,
+    onProfile: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("\${story.name} • MEMBER RIDE") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                PhotoArtwork(story.ride, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clip(RoundedCornerShape(12.dp)), 2)
+                Text(story.date, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text("\${story.ride}  •  \${story.distance}")
+                Text("RIDER BADGE: \${story.badge}")
+                Text("Ride story detail, photos and route information.")
+            }
+        },
+        confirmButton = {
+            Row {
+                TextButton(onClick = onFire) { Text(if (isFired) "FIRED" else "FIRE") }
+                TextButton(onClick = onGps) { Text("GPS") }
+                TextButton(onClick = onProfile) { Text("PROFILE") }
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("CLOSE") } }
+    )
+}
+
+@Composable
+private fun ShowcaseMessageDialog(title: String, message: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } }
     )
 }
