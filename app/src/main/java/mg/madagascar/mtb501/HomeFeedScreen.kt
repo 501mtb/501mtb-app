@@ -162,11 +162,11 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                     ride = ride,
                     admin = demoAdmin,
                     onOpen = { selectedRide = ride },
-                    onAdmin = { action -> adminMessage = "$action: \${ride.title}" },
+                    onAdmin = { action -> adminMessage = "$action: ${ride.title}" },
                     onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
                     isFired = fired[ride.id] ?: false,
                     onComment = { commentsFor = ride.title },
-                    onShare = { shareMessage = "Share preview: \${ride.title}" }
+                    onShare = { shareMessage = "Share preview: ${ride.title}" }
                 )
             }
         }
@@ -184,11 +184,11 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                         ride = ride,
                         admin = demoAdmin,
                         onOpen = { selectedRide = ride },
-                        onAdmin = { action -> adminMessage = "$action: \${ride.title}" },
+                        onAdmin = { action -> adminMessage = "$action: ${ride.title}" },
                         onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
                         isFired = fired[ride.id] ?: false,
                         onComment = { commentsFor = ride.title },
-                        onShare = { shareMessage = "Share preview: \${ride.title}" }
+                        onShare = { shareMessage = "Share preview: ${ride.title}" }
                     )
                 }
             }
@@ -209,7 +209,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                         onFire = { fired[story.id] = !(fired[story.id] ?: false) },
                         onGps = { gpsStory = story },
                         onProfile = { profileStory = story },
-                        onAdmin = { adminMessage = "$it: \${story.name}" }
+                        onAdmin = { adminMessage = "$it: ${story.name}" }
                     )
                 }
             }
@@ -227,7 +227,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             isFired = fired[ride.id] ?: false,
             onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
             onComment = { commentsFor = ride.title },
-            onShare = { shareMessage = "Share preview: \${ride.title}" },
+            onShare = { shareMessage = "Share preview: ${ride.title}" },
             onDismiss = { selectedRide = null }
         )
     }
@@ -244,15 +244,15 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     }
     gpsStory?.let { story ->
         ShowcaseMessageDialog(
-            title = "GPS TRACK • \${story.ride}",
-            message = "A GPS route preview for \${story.name} will appear here. This is a visual demo; no real GPX track is connected.",
+            title = "GPS TRACK • ${story.ride}",
+            message = "A GPS route preview for ${story.name} will appear here. This is a visual demo; no real GPX track is connected.",
             onDismiss = { gpsStory = null }
         )
     }
     profileStory?.let { story ->
         ShowcaseMessageDialog(
-            title = "\${story.name} • RIDER PROFILE",
-            message = "501MTB member profile preview\\nBadge: \${story.badge}\\nLatest ride: \${story.ride}\\nDistance: \${story.distance}",
+            title = "${story.name} • RIDER PROFILE",
+            message = "501MTB member profile preview\nBadge: ${story.badge}\nLatest ride: ${story.ride}\nDistance: ${story.distance}",
             onDismiss = { profileStory = null }
         )
     }
@@ -283,14 +283,14 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     shareMessage?.let { message ->
         ShowcaseMessageDialog(
             title = "FACEBOOK SHARE PREVIEW",
-            message = "$message\\n\\nThis preview does not publish anything to Facebook.",
+            message = "$message\n\nThis preview does not publish anything to Facebook.",
             onDismiss = { shareMessage = null }
         )
     }
     adminMessage?.let { message ->
         ShowcaseMessageDialog(
             title = "ADMIN SHOWCASE",
-            message = "$message\\n\\nThis is a UI demonstration. Create, edit and delete are not saved.",
+            message = "$message\n\nThis is a UI demonstration. Create, edit and delete are not saved.",
             onDismiss = { adminMessage = null }
         )
     }
@@ -360,8 +360,8 @@ private fun NextRideCard(
                     ) {
                         Text(ride.date, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
                         Text(ride.title, color = Color.White, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, maxLines = 2)
-                        Text("\${ride.level}  •  \${ride.time}", color = Color.White, style = MaterialTheme.typography.labelSmall)
-                        Text("MEET: \${ride.meeting}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                        Text("${ride.level}  •  ${ride.time}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                        Text("MEET: ${ride.meeting}", color = Color.White, style = MaterialTheme.typography.labelSmall)
                     }
                     if (admin) AdminMenuButton(onAction = { onAdmin(it) })
                 }
@@ -402,7 +402,7 @@ private fun PastEventCard(
                 ) {
                     Text(ride.title, color = Color.White, style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text("\${ride.distance}  •  \${ride.date}", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                    Text("${ride.distance}  •  ${ride.date}", color = Color.White, style = MaterialTheme.typography.labelMedium)
                 }
             }
             RideActions(ride.id, isFired, onFire, onComment, onShare, onOpen)
@@ -444,7 +444,7 @@ private fun CommunityStoryCard(
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 Text(story.name, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
-                Text("\${story.ride} • \${story.distance}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                Text("${story.ride} • ${story.distance}", color = Color.White, style = MaterialTheme.typography.labelSmall)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -552,14 +552,14 @@ private fun RideShowcaseDialog(
             Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)), if (ride.completed) 1 else 0)
                 Text(ride.date, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                Text("\${ride.distance}  •  \${ride.level}")
-                Text("TIME: \${ride.time}")
-                Text("MEETING POINT: \${ride.meeting}")
+                Text("${ride.distance}  •  ${ride.level}")
+                Text("TIME: ${ride.time}")
+                Text("MEETING POINT: ${ride.meeting}")
                 Divider()
                 Text("PHOTO GALLERY", fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     repeat(3) { index ->
-                        PhotoArtwork("PHOTO \${index + 1}", Modifier.weight(1f).aspectRatio(1f), index)
+                        PhotoArtwork("PHOTO ${index + 1}", Modifier.weight(1f).aspectRatio(1f), index)
                     }
                 }
                 Text("501MTB reactions and comments are shown here in the finished app.")
@@ -588,13 +588,13 @@ private fun StoryDetailDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("\${story.name} • MEMBER RIDE") },
+        title = { Text("${story.name} • MEMBER RIDE") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 PhotoArtwork(story.ride, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clip(RoundedCornerShape(12.dp)), 2)
                 Text(story.date, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                Text("\${story.ride}  •  \${story.distance}")
-                Text("RIDER BADGE: \${story.badge}")
+                Text("${story.ride}  •  ${story.distance}")
+                Text("RIDER BADGE: ${story.badge}")
                 Text("Ride story detail, photos and route information.")
             }
         },
