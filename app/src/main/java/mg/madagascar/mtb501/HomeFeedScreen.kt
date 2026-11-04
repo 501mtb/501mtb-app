@@ -259,9 +259,6 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
         }
     }
 
-    var storyPage by remember { mutableStateOf(0) }
-    var visibleStoryCount by remember { mutableStateOf(6) }
-
     var demoAdmin by remember { mutableStateOf(false) }
     var selectedRide by remember { mutableStateOf<ShowcaseRide?>(null) }
     var selectedStory by remember { mutableStateOf<ShowcaseStory?>(null) }
@@ -274,8 +271,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     val demoComments = remember { mutableStateMapOf<String, List<String>>() }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = Modifier.fillMaxSize().padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
@@ -325,7 +322,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             ShowcaseSectionHeader("PAST EVENT", "MTB EVENT", demoAdmin) {
                 adminMessage = "Add a Past Event"
             }
@@ -349,13 +346,13 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SectionHeading("COMMUNITY", "MEMBER RIDE STORIES")
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(stories.drop(storyPage * 8).take(visibleStoryCount), key = { it.id }) { story ->
+                items(stories, key = { it.id }) { story ->
                     CommunityStoryCard(
                         story = story,
                         admin = demoAdmin,
@@ -368,32 +365,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                     )
                 }
             }
-            if (storyPage * 8 + visibleStoryCount < stories.size) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = {
-                        if (visibleStoryCount < 8 && storyPage * 8 + visibleStoryCount < stories.size) {
-                            visibleStoryCount = (visibleStoryCount + 2).coerceAtMost(8)
-                        } else if ((storyPage + 1) * 8 < stories.size) {
-                            storyPage += 1
-                            visibleStoryCount = 6
-                        }
-                    }) {
-                        Text(
-                            if (visibleStoryCount < 8 && storyPage * 8 + visibleStoryCount < stories.size)
-                                "LOAD MORE STORIES" else "NEXT STORIES  →"
-                        )
-                    }
-                }
-            }
         }
 
-        OutlinedButton(
-            onClick = onOpenCommunityFeed,
-            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 10.dp)
-        ) { Text("OPEN COMMUNITY FEED") }
     }
 
     selectedRide?.let { ride ->
@@ -614,7 +587,7 @@ private fun CommunityStoryCard(
     onAdmin: (String) -> Unit
 ) {
     Card(
-        modifier = Modifier.width(164.dp),
+        modifier = Modifier.width(120.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -632,24 +605,24 @@ private fun CommunityStoryCard(
             Column(
                 modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth()
                     .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .92f))))
-                    .padding(horizontal = 9.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                    .padding(horizontal = 6.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(1.dp)
             ) {
-                Text(story.name, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
-                Text("${story.ride} • ${story.distance}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                Text(story.name, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${story.ride} • ${story.distance}", color = Color.White, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onFire, modifier = Modifier.size(32.dp)) {
+                    IconButton(onClick = onFire, modifier = Modifier.size(27.dp)) {
                         Icon(Icons.Default.Favorite, contentDescription = "Fire reaction",
                             tint = if (isFired) Color(0xFFFF4D4D) else Color.White, modifier = Modifier.size(18.dp))
                     }
-                    IconButton(onClick = onGps, modifier = Modifier.size(32.dp)) {
+                    IconButton(onClick = onGps, modifier = Modifier.size(27.dp)) {
                         Icon(Icons.Default.GpsFixed, contentDescription = "GPS track", tint = Color.White, modifier = Modifier.size(18.dp))
                     }
-                    TextButton(onClick = onProfile, contentPadding = PaddingValues(0.dp)) {
+                    TextButton(onClick = onProfile, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(27.dp)) {
                         Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
                         Text("PROFILE", color = Color.White, style = MaterialTheme.typography.labelSmall)
                     }
