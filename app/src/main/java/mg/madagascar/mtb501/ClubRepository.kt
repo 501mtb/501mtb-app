@@ -286,6 +286,45 @@ class ClubRepository(
         ).await()
     }
 
+
+    /**
+     * Saves photo references only. Image files remain hosted on the 501MTB website.
+     * PDC accepts an ordered list for its cover slideshow; other targets are single-photo.
+     */
+    suspend fun savePhotoAssignment(
+        slotId: String,
+        category: String,
+        requiredRatio: String,
+        photos: List<PhotoLibraryImage>
+    ) {
+        require(slotId.isNotBlank()) { "Photo target is missing." }
+        require(photos.isNotEmpty()) { "Select at least one photo." }
+        val adminUid = auth.currentUser?.uid ?: error("Administrator sign-in is required.")
+        val isSlideshow = slotId == "501mtb.pdc"
+        require(isSlideshow || photos.size == 1) { "This target accepts one photo only." }
+        require(photos.all { it.category == category && it.ratio == requiredRatio }) {
+            "One or more photos do not match the target category and ratio."
+        }
+        db.collection("photoAssignments").document(slotId).set(
+            mapOf(
+                "slotId" to slotId,
+                "category" to category,
+                "requiredRatio" to requiredRatio,
+                "imageIds" to photos.map { it.id },
+                "fileNames" to photos.map { it.fileName },
+                "imageUrls" to photos.map { it.url },
+                "selectionMode" to if (isSlideshow) "slideshow" else "single",
+                "updatedBy" to adminUid,
+                "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+        ).await()
+    }
+
+    suspend fun getPhotoAssignment(slotId: String): List<String> {
+        val snapshot = db.collection("photoAssignments").document(slotId).get().await()
+        return snapshot.get("imageIds") as? List<String> ?: emptyList()
+    }
+
     suspend fun getClubSummary(): ClubSummary {
         val snapshot = db.collection("publicStats").document("clubSummary").get().await()
         return ClubSummary(
