@@ -108,10 +108,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VERSIONED_APK="app/build/outputs/apk/release/501MTB-v${ANDROID_VERSION_NAME}.apk"
-          cp "app/build/outputs/apk/release/app-release.apk" "$VERSIONED_APK"
+          RELEASE_DIR="app/build/outputs/apk/release"
+          VERSIONED_APK="$RELEASE_DIR/501MTB-v${ANDROID_VERSION_NAME}.apk"
+          STABLE_APK="$RELEASE_DIR/501MTB.apk"
+          cp "$RELEASE_DIR/app-release.apk" "$VERSIONED_APK"
+          cp "$RELEASE_DIR/app-release.apk" "$STABLE_APK"
           echo "VERSIONED_APK=$VERSIONED_APK" >> "$GITHUB_ENV"
-          echo "Versioned artifact: 501MTB-v${ANDROID_VERSION_NAME}.apk"
+          echo "STABLE_APK=$STABLE_APK" >> "$GITHUB_ENV"
+          echo "Prepared: 501MTB-v${ANDROID_VERSION_NAME}.apk and 501MTB.apk"
 
       - name: Publish versioned APK and stable download
         env:
@@ -120,6 +124,6 @@ jobs:
         run: |
           set -euo pipefail
           gh release upload latest-test \
-            "$VERSIONED_APK#501MTB-v${ANDROID_VERSION_NAME}.apk" \
-            "app/build/outputs/apk/release/app-release.apk#501MTB.apk" \
+            "$VERSIONED_APK" \
+            "$STABLE_APK" \
             --clobber
