@@ -197,6 +197,8 @@ fun AdminPanel() {
             Text("Pending account approvals: ${accounts.size}")
             if (accounts.isEmpty()) Text("No accounts waiting for approval.")
 
+            OfficialMemberAdminSection(onMessage = { message = it })
+
             AdminPublishingSection(
                 repository = repository,
                 onMessage = { message = it }
