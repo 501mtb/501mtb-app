@@ -77,27 +77,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          script: |
-            cd tests/firestore-rules
-            npx firebase emulators:start --config ../../firebase.json --only auth,firestore --project demo-501mtb > "$RUNNER_TEMP/501mtb-firebase-emulators.log" 2>&1 &
-            EMULATOR_PID=$!
-            for attempt in $(seq 1 60); do
-              if nc -z 127.0.0.1 8080 && nc -z 127.0.0.1 9099; then
-                break
-              fi
-              sleep 2
-            done
-            if ! nc -z 127.0.0.1 8080 || ! nc -z 127.0.0.1 9099; then
-              cat "$RUNNER_TEMP/501mtb-firebase-emulators.log"
-              kill "$EMULATOR_PID" || true
-              exit 1
-            fi
-            node seed-android-integration-admin.mjs
-            cd ../..
-            gradle connectedDebugAndroidTest
-            TEST_EXIT=$?
-            kill "$EMULATOR_PID" || true
-            exit "$TEST_EXIT"
+          script: bash .github/scripts/run-android-integration.sh
 
       - name: Print Android signing fingerprints
         run: gradle signingReport
