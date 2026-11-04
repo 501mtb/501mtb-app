@@ -274,8 +274,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     val demoComments = remember { mutableStateMapOf<String, List<String>>() }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        modifier = Modifier.fillMaxSize().padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
@@ -514,7 +514,7 @@ private fun NextRideCard(
     onShare: () -> Unit
 ) {
     Card(
-        modifier = Modifier.width(318.dp),
+        modifier = Modifier.width(270.dp),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -557,7 +557,7 @@ private fun PastEventCard(
     onShare: () -> Unit
 ) {
     Card(
-        modifier = Modifier.width(258.dp),
+        modifier = Modifier.width(218.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
