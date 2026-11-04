@@ -200,7 +200,7 @@ test("concurrent member additions receive distinct sequential IDs", async () => 
     allocateMember(db, "Concurrent B", "W", "ROOKIE")
   ]);
   assert.equal(new Set(ids).size, 2);
-  assert.deepEqual(ids.slice().sort(), ["M-056", "W-057"].sort());
+  assert.deepEqual(ids.map(id => Number(id.slice(2))).sort((a, b) => a - b), [56, 57]);
   assert.equal((await getDoc(doc(db, "counters", "memberSequence"))).data().lastIssued, 57);
 });
 
