@@ -208,6 +208,14 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                     if (row.v2Text("name").isBlank()) return@mapNotNull null
                     row
                 }
+                val leaderRows = sheets.optJSONArray("Leaders") ?: JSONArray()
+                val leaders = (0 until leaderRows.length()).mapNotNull { index ->
+                    val row = leaderRows.optJSONObject(index) ?: return@mapNotNull null
+                    if (row.has("published") && row.v2Text("published").lowercase() != "yes") return@mapNotNull null
+                    if (row.v2Text("name").isBlank()) return@mapNotNull null
+                    row
+                }
+                val allMembers = (riders + leaders).distinctBy { it.v2Text("name").lowercase() }
                 val registryNames = listOf("MemberRides", "Member Rides", "Member_Rides", "Member Ride", "Member_Ride", "IndividualRides", "Individual Rides", "Individual_Rides", "Member Ride Registry", "RideLog", "Ride Log", "RideRegistry", "Ride Registry")
                 val registry = registryNames.firstNotNullOfOrNull { sheets.optJSONArray(it) }
                 val memberStories = mutableListOf<ShowcaseStory>()
@@ -217,11 +225,11 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                         val name = row.v2Text("rider_name", "member_name", "rider", "member", "name")
                         if (name.isBlank()) continue
                         val distanceRaw = row.v2Text("distance_km", "distance", "km")
-                        val member = riders.firstOrNull { it.v2Text("name").equals(name, true) }
+                        val member = allMembers.firstOrNull { it.v2Text("name").equals(name, true) }
                         memberStories += ShowcaseStory(
                             id = row.v2Text("id").ifBlank { "member-ride-" + index }.hashCode(),
                             name = name.uppercase(),
-                            badge = member?.v2Text("category", "badge", "status")?.uppercase().orEmpty().ifBlank { "RIDER" },
+                            badge = member?.v2Text("category", "badge", "status", "role_en", "role")?.uppercase().orEmpty().ifBlank { "RIDER" },
                             ride = row.v2Text("ride_title", "title", "ride_name", "event").ifBlank { "MEMBER RIDE" },
                             distance = if (distanceRaw.isBlank()) "—" else if (distanceRaw.contains("km", true)) distanceRaw else distanceRaw + " km",
                             date = showcaseDate(row.v2Text("date", "ride_date", "date_start")),
@@ -232,11 +240,11 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                     }
                 }
                 if (memberStories.isEmpty()) {
-                    riders.forEachIndexed { index, row ->
+                    allMembers.forEachIndexed { index, row ->
                         memberStories += ShowcaseStory(
                             id = row.v2Text("id").ifBlank { "rider-" + index }.hashCode(),
                             name = row.v2Text("name").uppercase(),
-                            badge = row.v2Text("category", "badge", "status").uppercase().ifBlank { "RIDER" },
+                            badge = row.v2Text("category", "badge", "status", "role_en", "role").uppercase().ifBlank { "RIDER" },
                             ride = "MEMBER RIDE", distance = "—", date = "501MTB RIDER",
                             photoUrl = v2AssetUrl(row.v2Text("photo")),
                             profileUrl = row.v2Text("profile_url").takeIf { it.isNotBlank() }
