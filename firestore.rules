@@ -10,6 +10,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(uid);
     }
 
+    function counterPath() {
+      return /databases/$(database)/documents/counters/memberSequence;
+    }
+
     function hasUserRecord() {
       return signedIn() && exists(userPath(request.auth.uid));
     }
@@ -28,22 +32,58 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    function assignedIdMatchesCounter() {
+      return getAfter(counterPath()).data.lastIssuedBy == request.auth.uid
+        && getAfter(counterPath()).data.lastIssuedId == request.resource.data.memberId;
+    }
+
     match /users/{uid} {
       allow read: if isOwnUser(uid) || isAdmin();
 
-      // A new Google account can create only its own pending USER profile.
-      // No memberId, role escalation, approval, or arbitrary extra fields.
+      // New accounts receive their R-### ID in the same atomic transaction as the counter.
       allow create: if isOwnUser(uid)
         && request.resource.data.keys().hasOnly([
           "uid", "email", "displayName", "photoURL", "role",
-          "approvalStatus", "createdAt"
+          "approvalStatus", "memberId", "createdAt"
         ])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.role == "USER"
-        && request.resource.data.approvalStatus == "PENDING";
+        && request.resource.data.approvalStatus == "PENDING"
+        && request.resource.data.memberId is string
+        && request.resource.data.memberId.matches("R-[0-9]{3}")
+        && assignedIdMatchesCounter();
 
-      // Only an administrator can approve accounts or link legacy member records.
-      allow update, delete: if isAdmin();
+      // Existing profiles without an ID may receive one; other account changes remain admin-only.
+      allow update: if isAdmin()
+        || (isOwnUser(uid)
+          && !resource.data.keys().hasAny(["memberId"])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["memberId"])
+          && request.resource.data.memberId is string
+          && request.resource.data.memberId.matches("R-[0-9]{3}")
+          && assignedIdMatchesCounter());
+
+      allow delete: if isAdmin();
+    }
+
+    match /counters/{counterId} {
+      allow read: if signedIn() && counterId == "memberSequence";
+      allow create: if signedIn()
+        && counterId == "memberSequence"
+        && request.resource.data.keys().hasOnly(["lastIssued", "lastIssuedId", "lastIssuedBy"])
+        && request.resource.data.lastIssued == 1
+        && request.resource.data.lastIssuedId == "R-001"
+        && request.resource.data.lastIssuedBy == request.auth.uid
+        && getAfter(userPath(request.auth.uid)).data.memberId == "R-001";
+      allow update: if signedIn()
+        && counterId == "memberSequence"
+        && request.resource.data.keys().hasOnly(["lastIssued", "lastIssuedId", "lastIssuedBy"])
+        && request.resource.data.lastIssued == resource.data.lastIssued + 1
+        && request.resource.data.lastIssued <= 999
+        && request.resource.data.lastIssuedId is string
+        && request.resource.data.lastIssuedId.matches("R-[0-9]{3}")
+        && request.resource.data.lastIssuedBy == request.auth.uid
+        && getAfter(userPath(request.auth.uid)).data.memberId == request.resource.data.lastIssuedId;
+      allow delete: if false;
     }
 
     match /members/{memberId} {
@@ -53,11 +93,6 @@ service cloud.firestore {
 
     match /memberLinks/{memberId} {
       allow read, write: if isAdmin();
-    }
-
-    // Global member sequence is private and writable only by administrators.
-    match /counters/{counterId} {
-      allow read, write: if isAdmin() && counterId == "memberSequence";
     }
 
     match /rides/{rideId} {
