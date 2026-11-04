@@ -192,7 +192,7 @@ private fun CommunitySection(members: List<ClubMember>) {
                                 modifier = Modifier.align(Alignment.TopStart).padding(5.dp))
                             Text("PROFILE →", modifier = Modifier.align(Alignment.BottomEnd)
                                 .padding(8.dp).background(Color.Black.copy(alpha = 0.72f), RoundedCornerShape(6.dp))
-                                .clickable { }.padding(horizontal = 7.dp, vertical = 5.dp),
+                                .padding(horizontal = 7.dp, vertical = 5.dp),
                                 color = Color.White, style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold)
                         }
