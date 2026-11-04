@@ -585,7 +585,7 @@ private fun CommunityStoryCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f)) {
-            PhotoArtwork(story.name, Modifier.fillMaxSize().clickable(onClick = onOpen), 2)
+            PhotoArtwork(story.name, Modifier.fillMaxSize().clickable(onClick = onOpen), 2, story.photoUrl)
             Column(
                 modifier = Modifier.align(Alignment.TopStart).padding(7.dp)
                     .clip(RoundedCornerShape(7.dp)).background(Color.Black.copy(alpha = .76f)).padding(7.dp)
@@ -704,18 +704,8 @@ private fun PhotoArtwork(title: String, modifier: Modifier = Modifier, variant: 
 }
 
 private fun ridePhotoUrl(ride: ShowcaseRide): String {
-    val file = when (ride.id) {
-        1 -> "home/home-photo-001.jpg"
-        2 -> "home/home-photo-002.jpg"
-        3 -> "home/home-photo-003.jpg"
-        11 -> "event/completed/event-016.jpg"
-        13 -> "event/completed/event-017.jpg"
-        12 -> "event/completed/event-018.jpg"
-        else -> "event/event-001.jpg"
-    }
-    return "https://raw.githubusercontent.com/501mtb/501mtb.github.io/main/assets/images/$file"
+    return ride.photoUrl ?: "https://raw.githubusercontent.com/501mtb/501mtb.github.io/main/assets/images/event/event-001.jpg"
 }
-
 private fun galleryPhotoUrl(index: Int): String {
     val file = when (index % 3) {
         0 -> "event/event-001.jpg"
@@ -755,13 +745,10 @@ private fun RideShowcaseDialog(
                         PhotoArtwork("PHOTO ${index + 1}", Modifier.weight(1f).aspectRatio(1f), index, galleryPhotoUrl(index))
                     }
                 }
-                if (ride.id == 11) {
-                    OutlinedButton(
-                        onClick = { uriHandler.openUri("https://www.facebook.com/61559342776527/posts/122234023292311425/?app=fbl") },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                ride.externalUrl?.let { postUrl ->
+                    OutlinedButton(onClick = { uriHandler.openUri(postUrl) }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.OpenInNew, contentDescription = null)
-                        Text("OPEN ORIGINAL FACEBOOK POST")
+                        Text("OPEN ORIGINAL EVENT LINK")
                     }
                 }
                 Text("501MTB reactions and comments are shown here in the finished app.")
@@ -795,7 +782,7 @@ private fun StoryDetailDialog(
                 modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
-                PhotoArtwork(story.ride, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clip(RoundedCornerShape(12.dp)), 2)
+                PhotoArtwork(story.ride, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clip(RoundedCornerShape(12.dp)), 2, story.photoUrl)
                 Text(story.date, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 Text("${story.ride}  •  ${story.distance}")
                 Text("RIDER BADGE: ${story.badge}")
