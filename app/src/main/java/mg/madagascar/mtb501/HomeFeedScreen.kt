@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -193,7 +194,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                         distance = if (distanceRaw.isBlank()) "—" else if (distanceRaw.contains("km", true)) distanceRaw else distanceRaw + " km",
                         completed = status == "completed",
                         photoUrl = v2AssetUrl(row.v2Text("image", "photo")),
-                        externalUrl = row.v2Text("url", "facebook_url", "link").ifBlank { null }
+                        externalUrl = row.v2Text("url", "facebook_url", "link").takeIf { it.isNotBlank() }
                     )
                 }
                 val upcoming = events.filter { !it.completed }.sortedBy { showcaseDateKey(it.date) }
@@ -225,8 +226,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                             distance = if (distanceRaw.isBlank()) "—" else if (distanceRaw.contains("km", true)) distanceRaw else distanceRaw + " km",
                             date = showcaseDate(row.v2Text("date", "ride_date", "date_start")),
                             photoUrl = v2AssetUrl(member?.v2Text("photo").orEmpty()),
-                            gpsUrl = row.v2Text("gps_url", "gpx_url", "track_url").ifBlank { null },
-                            profileUrl = member?.v2Text("profile_url")?.ifBlank { null }
+                            gpsUrl = row.v2Text("gps_url", "gpx_url", "track_url").takeIf { it.isNotBlank() },
+                            profileUrl = member?.v2Text("profile_url")?.takeIf { it.isNotBlank() }
                         )
                     }
                 }
