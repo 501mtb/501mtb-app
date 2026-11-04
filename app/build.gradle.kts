@@ -8,18 +8,26 @@ android {
     namespace = "mg.madagascar.mtb501"
     compileSdk = 36
 
-    signingConfigs {
-        create("release") {
-            val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
-            val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            val keyAliasValue = System.getenv("ANDROID_KEY_ALIAS")
-            val keyPasswordValue = System.getenv("ANDROID_KEY_PASSWORD")
+    // Release signing is optional for local/debug builds, but all four values
+    // must be present before the release variant is signed.
+    val releaseStorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+    val releaseStorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    val releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+    val releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+    val hasReleaseSigning = listOf(
+        releaseStorePath,
+        releaseStorePassword,
+        releaseKeyAlias,
+        releaseKeyPassword
+    ).all { !it.isNullOrBlank() }
 
-            if (!keystorePath.isNullOrBlank()) {
-                storeFile = file(keystorePath)
-                storePassword = keystorePassword
-                keyAlias = keyAliasValue
-                keyPassword = keyPasswordValue
+    if (hasReleaseSigning) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(requireNotNull(releaseStorePath))
+                storePassword = requireNotNull(releaseStorePassword)
+                keyAlias = requireNotNull(releaseKeyAlias)
+                keyPassword = requireNotNull(releaseKeyPassword)
             }
         }
     }
@@ -34,7 +42,9 @@ android {
 
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
