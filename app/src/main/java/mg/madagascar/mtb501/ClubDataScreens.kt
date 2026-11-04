@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -168,6 +169,8 @@ fun RidersScreen() {
 fun AdminPanel() {
     val repository = remember { ClubRepository() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var syncingRegistry by remember { mutableStateOf(false) }
     var isAdmin by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var accounts by remember { mutableStateOf<List<PendingAccount>>(emptyList()) }
@@ -195,6 +198,23 @@ fun AdminPanel() {
         Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Administrator", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
             Text("Pending account approvals: ${accounts.size}")
+            Button(
+                enabled = !syncingRegistry,
+                onClick = {
+                    scope.launch {
+                        syncingRegistry = true
+                        try {
+                            val count = repository.syncMemberRegistry(context)
+                            message = "Member registry synchronized: $count records."
+                        } catch (e: Exception) {
+                            message = e.localizedMessage ?: "Member registry synchronization failed."
+                        } finally {
+                            syncingRegistry = false
+                        }
+                    }
+                }
+            ) { Text(if (syncingRegistry) "Synchronizing registry…" else "Synchronize member registry") }
+            Text("This imports the bundled JSON using legacy IDs (RID/LDR) and keeps existing profile data.")
             if (accounts.isEmpty()) Text("No accounts waiting for approval.")
 
             AdminPublishingSection(
