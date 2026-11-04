@@ -59,6 +59,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     val repository = remember { ClubRepository() }
     var rides by remember { mutableStateOf<List<ClubRide>>(emptyList()) }
     var members by remember { mutableStateOf<List<ClubMember>>(emptyList()) }
+    var rideCoverUrl by remember { mutableStateOf<String?>(null) }
+    var eventCoverUrl by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
     var selectedRide by remember { mutableStateOf<ClubRide?>(null) }
     var ridesFailed by remember { mutableStateOf(false) }
@@ -74,6 +76,22 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             members = repository.getPublicMembers().shuffled()
         } catch (_: Exception) {
             membersFailed = true
+        }
+        // Resolve the administrator-selected shared-library covers. Photo binaries
+        // remain on GitHub Pages; only their IDs are stored in Firestore.
+        try {
+            val photoRepository = PhotoLibraryRepository()
+            val library = photoRepository.load()
+            val ridePhotoIds = repository.getPhotoAssignment("rides")
+            rideCoverUrl = ridePhotoIds.firstOrNull()?.let { id ->
+                library.imagesForSlot("rides").firstOrNull { it.id == id }?.url
+            }
+            val eventPhotoIds = repository.getPhotoAssignment("events")
+            eventCoverUrl = eventPhotoIds.firstOrNull()?.let { id ->
+                library.imagesForSlot("events").firstOrNull { it.id == id }?.url
+            }
+        } catch (_: Exception) {
+            // Keep the branded placeholders when the online catalogue is unavailable.
         }
         loading = false
     }
@@ -96,12 +114,14 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             } else {
                 NextRideSection(
                     rides.filter { it.status == RideStatus.PLANNED }.sortedBy { it.date },
-                    onRideClick = { selectedRide = it }
+                    onRideClick = { selectedRide = it },
+                    coverUrl = rideCoverUrl
                 )
                 PastEventSection(
                     rides.filter { it.status == RideStatus.COMPLETED }
                         .sortedByDescending { it.date }.take(50),
-                    onRideClick = { selectedRide = it }
+                    onRideClick = { selectedRide = it },
+                    coverUrl = eventCoverUrl
                 )
             }
             if (membersFailed) {
@@ -124,7 +144,11 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
 }
 
 @Composable
-private fun NextRideSection(rides: List<ClubRide>, onRideClick: (ClubRide) -> Unit) {
+private fun NextRideSection(
+    rides: List<ClubRide>,
+    onRideClick: (ClubRide) -> Unit,
+    coverUrl: String?
+) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionHeading("NEXT RIDE")
         if (rides.isEmpty()) {
@@ -139,7 +163,7 @@ private fun NextRideSection(rides: List<ClubRide>, onRideClick: (ClubRide) -> Un
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Column {
-                            RidePhotoPlaceholder(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f))
+                            RidePhotoPlaceholder(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f), coverUrl)
                             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                 Text(ride.date, color = MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
@@ -157,7 +181,11 @@ private fun NextRideSection(rides: List<ClubRide>, onRideClick: (ClubRide) -> Un
 }
 
 @Composable
-private fun PastEventSection(rides: List<ClubRide>, onRideClick: (ClubRide) -> Unit) {
+private fun PastEventSection(
+    rides: List<ClubRide>,
+    onRideClick: (ClubRide) -> Unit,
+    coverUrl: String?
+) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionHeading("PAST EVENT")
         Text("MTB Event", modifier = Modifier.padding(horizontal = 18.dp),
@@ -174,7 +202,7 @@ private fun PastEventSection(rides: List<ClubRide>, onRideClick: (ClubRide) -> U
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Column {
-                            RidePhotoPlaceholder(ride.title, Modifier.fillMaxWidth().aspectRatio(4f / 3f))
+                            RidePhotoPlaceholder(ride.title, Modifier.fillMaxWidth().aspectRatio(4f / 3f), coverUrl)
                             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(ride.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                 Text("${ride.distanceKm} km • ${ride.date}",
@@ -226,11 +254,30 @@ private fun CommunitySection(members: List<ClubMember>) {
 }
 
 @Composable
-private fun RidePhotoPlaceholder(title: String, modifier: Modifier = Modifier) {
-    Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center) {
-        Text("501MTB", color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+private fun RidePhotoPlaceholder(
+    title: String,
+    modifier: Modifier = Modifier,
+    imageUrl: String? = null
+) {
+    Box(
+        modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        if (!imageUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Text(
+                "501MTB",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black
+            )
+        }
     }
 }
 
