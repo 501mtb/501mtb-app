@@ -202,6 +202,10 @@ fun AdminPanel() {
                 onMessage = { message = it }
             )
 
+            AdminPhotoLibrarySection(
+                onMessage = { message = it }
+            )
+
             AdminAttendanceSection(
                 repository = repository,
                 onMessage = { message = it }
