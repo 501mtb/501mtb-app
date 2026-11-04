@@ -55,7 +55,7 @@ import coil.compose.AsyncImage
  * require dedicated data fields and admin publishing workflows in a later pass.
  */
 @Composable
-fun HomeFeedScreen() {
+fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     val repository = remember { ClubRepository() }
     var rides by remember { mutableStateOf<List<ClubRide>>(emptyList()) }
     var members by remember { mutableStateOf<List<ClubMember>>(emptyList()) }
