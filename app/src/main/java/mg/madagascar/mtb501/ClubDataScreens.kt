@@ -218,15 +218,22 @@ fun AdminPanel() {
                         androidx.compose.material3.OutlinedTextField(
                             value = localMemberId,
                             onValueChange = { localMemberId = it },
-                            label = { Text("Existing member ID (optional)") },
+                            label = { Text("Official member ID (required)") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
+                        Text(
+                            "Choose an existing ID from the official register. One member can be linked to only one Google account.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = {
+                            Button(
+                                enabled = localMemberId.isNotBlank(),
+                                onClick = {
                                 scope.launch {
                                     try {
-                                        repository.reviewAccount(account.uid, true, localMemberId.trim().ifBlank { null })
+                                        repository.reviewAccount(account.uid, true, localMemberId.trim())
                                         message = "Account approved."
                                         refresh()
                                     } catch (e: Exception) {
