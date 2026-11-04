@@ -61,17 +61,21 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     var members by remember { mutableStateOf<List<ClubMember>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var selectedRide by remember { mutableStateOf<ClubRide?>(null) }
-    var failed by remember { mutableStateOf(false) }
+    var ridesFailed by remember { mutableStateOf(false) }
+    var membersFailed by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         try {
             rides = repository.getRides()
+        } catch (_: Exception) {
+            ridesFailed = true
+        }
+        try {
             members = repository.getPublicMembers().shuffled()
         } catch (_: Exception) {
-            failed = true
-        } finally {
-            loading = false
+            membersFailed = true
         }
+        loading = false
     }
 
     Column(
@@ -86,14 +90,31 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             Box(Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-        } else if (failed) {
-            Text("Home content is temporarily unavailable.", modifier = Modifier.padding(horizontal = 18.dp),
-                color = MaterialTheme.colorScheme.error)
         } else {
-            NextRideSection(rides.filter { it.status == RideStatus.PLANNED }.sortedBy { it.date }, onRideClick = { selectedRide = it })
-            PastEventSection(rides.filter { it.status == RideStatus.COMPLETED }.sortedByDescending { it.date }.take(50),
-                onRideClick = { selectedRide = it })
-            CommunitySection(members.take(8))
+            if (ridesFailed) {
+                SectionLoadError("Ride information is temporarily unavailable.")
+            } else {
+                NextRideSection(
+                    rides.filter { it.status == RideStatus.PLANNED }.sortedBy { it.date },
+                    onRideClick = { selectedRide = it }
+                )
+                PastEventSection(
+                    rides.filter { it.status == RideStatus.COMPLETED }
+                        .sortedByDescending { it.date }.take(50),
+                    onRideClick = { selectedRide = it }
+                )
+            }
+            if (membersFailed) {
+                SectionLoadError("Community information is temporarily unavailable.")
+            } else {
+                CommunitySection(members.take(8))
+            }
+            TextButton(
+                onClick = onOpenCommunityFeed,
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 12.dp)
+            ) {
+                Text("OPEN COMMUNITY FEED")
+            }
         }
     }
 
@@ -222,11 +243,24 @@ private fun SectionHeading(title: String) {
 
 @Composable
 private fun EmptySectionMessage(message: String) {
-    Box(Modifier.fillMaxWidth().padding(horizontal = 18.dp).height(76.dp)
-        .clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center) {
+    Box(
+        Modifier.fillMaxWidth().padding(horizontal = 18.dp).height(76.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
         Text(message, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium)
     }
+}
+
+@Composable
+private fun SectionLoadError(message: String) {
+    Text(
+        message,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodySmall
+    )
 }
 
 @Composable
