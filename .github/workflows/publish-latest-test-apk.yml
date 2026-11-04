@@ -99,9 +99,22 @@ jobs:
           fi
           echo "Signing certificate matches the currently published APK."
 
-      - name: Publish APK to stable latest-test download
+      - name: Prepare versioned APK filename
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSIONED_APK="app/build/outputs/apk/release/501MTB-v${ANDROID_VERSION_NAME}.apk"
+          cp "app/build/outputs/apk/release/app-release.apk" "$VERSIONED_APK"
+          echo "VERSIONED_APK=$VERSIONED_APK" >> "$GITHUB_ENV"
+          echo "Versioned artifact: 501MTB-v${ANDROID_VERSION_NAME}.apk"
+
+      - name: Publish versioned APK and stable download
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          gh release upload latest-test "app/build/outputs/apk/release/app-release.apk#501MTB.apk" --clobber
-
+          set -euo pipefail
+          gh release upload latest-test \
+            "$VERSIONED_APK#501MTB-v${ANDROID_VERSION_NAME}.apk" \
+            "app/build/outputs/apk/release/app-release.apk#501MTB.apk" \
+            --clobber
