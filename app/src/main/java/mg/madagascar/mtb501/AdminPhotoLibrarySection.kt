@@ -13,6 +13,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -52,6 +56,8 @@ fun AdminPhotoLibrarySection(
     var selectedTarget by remember { mutableStateOf(photoTargets.first().first) }
     var targetMenuExpanded by remember { mutableStateOf(false) }
     var selectedPhotos by remember { mutableStateOf<List<PhotoLibraryImage>>(emptyList()) }
+    var photoFieldsVisible by remember { mutableStateOf(false) }
+    var optionsMenuExpanded by remember { mutableStateOf(false) }
 
     suspend fun reload() {
         loading = true
@@ -107,16 +113,46 @@ fun AdminPhotoLibrarySection(
             modifier = Modifier.fillMaxWidth().padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                "Shared photo library",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                "Photo files stay on GitHub Pages. Firestore stores only selected photo references, never image files.",
-                style = MaterialTheme.typography.bodySmall
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { optionsMenuExpanded = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Photo library options")
+                }
+                DropdownMenu(
+                    expanded = optionsMenuExpanded,
+                    onDismissRequest = { optionsMenuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(if (photoFieldsVisible) "Hide photo fields" else "Show photo fields") },
+                        onClick = {
+                            photoFieldsVisible = !photoFieldsVisible
+                            optionsMenuExpanded = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Refresh photo library") },
+                        onClick = {
+                            optionsMenuExpanded = false
+                            scope.launch { reload() }
+                        }
+                    )
+                }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        "Shared photo library",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        "Photo files stay on GitHub Pages. Firestore stores only selected photo references.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
 
+            if (photoFieldsVisible) {
             OutlinedButton(onClick = { targetMenuExpanded = true }) {
                 Text("Target: ${photoTargets.firstOrNull { it.first == selectedTarget }?.second ?: selectedTarget}")
             }
@@ -248,6 +284,7 @@ fun AdminPhotoLibrarySection(
                         onClick = { scope.launch { reload() } }
                     ) { Text("Refresh library") }
                 }
+            }
             }
         }
     }
