@@ -5,13 +5,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -62,6 +62,8 @@ fun FeedScreen() {
 
     var account by remember { mutableStateOf<ClubUser?>(null) }
     var posts by remember { mutableStateOf<List<FeedPost>>(emptyList()) }
+    var rides by remember { mutableStateOf<List<ClubRide>>(emptyList()) }
+    var events by remember { mutableStateOf<List<ClubEvent>>(emptyList()) }
     var selectedPhoto by remember { mutableStateOf<Uri?>(null) }
     var caption by remember { mutableStateOf("") }
     var officialPost by remember { mutableStateOf(false) }
@@ -91,6 +93,8 @@ fun FeedScreen() {
                 visibility = doc.getString("visibility") ?: "COMMUNITY"
             )
         }
+        rides = repository.getRides()
+        events = repository.getEvents()
     }
 
     LaunchedEffect(auth.currentUser?.uid) {
@@ -109,11 +113,29 @@ fun FeedScreen() {
     val canPost = account != null && (isAdmin || account?.approvalStatus == ApprovalStatus.APPROVED)
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("501MTB Feed", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
-        Text("Ride moments shared by the 501MTB community.", style = MaterialTheme.typography.bodyMedium)
+        Text("501MTB", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+        Text("COMMUNITY • RIDES • EVENTS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+
+        Text("NEXT RIDE", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+        val nextRide = rides.filter { it.status == RideStatus.PLANNED }.minByOrNull { it.date }
+        if (nextRide == null) {
+            Text("No upcoming ride published yet.", style = MaterialTheme.typography.bodyMedium)
+        } else {
+            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(nextRide.title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+                    Text("${nextRide.date} • ${nextRide.location}")
+                    Text("${nextRide.distanceKm} km • ${nextRide.type}")
+                    if (!nextRide.facebookLink.isNullOrBlank()) Text("Event information available via the ride link.", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+
+        Text("COMMUNITY FEED", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+        Text("Photos, ride moments and 501MTB events shared by the community.", style = MaterialTheme.typography.bodyMedium)
 
         if (canPost) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -200,8 +222,7 @@ fun FeedScreen() {
         when {
             loading -> CircularProgressIndicator()
             posts.isEmpty() -> Text("No photos published yet.")
-            else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(posts, key = { it.id }) { post ->
+            else -> posts.forEach { post ->
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(horizontalArrangement = Arrangement.SpaceBetween) {
@@ -230,6 +251,29 @@ fun FeedScreen() {
                             }
                         }
                     }
+                }
+        }
+
+        events.forEach { event ->
+            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(event.type.name, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(event.title, style = MaterialTheme.typography.titleMedium)
+                    Text("${event.date} • ${event.location}")
+                    if (event.description.isNotBlank()) Text(event.description)
+                }
+            }
+        }
+
+        Text("PAST RIDES", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+        val pastRides = rides.filter { it.status == RideStatus.COMPLETED }.sortedByDescending { it.date }
+        if (pastRides.isEmpty()) Text("Completed rides will appear here.")
+        pastRides.forEach { ride ->
+            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(ride.title, style = MaterialTheme.typography.titleMedium)
+                    Text("${ride.date} • ${ride.location}")
+                    Text("${ride.distanceKm} km", color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
