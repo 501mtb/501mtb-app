@@ -219,14 +219,13 @@ class ClubRepository(
                 "reviewedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
             )
             if (approve) {
-                require(!memberId.isNullOrBlank()) {
-                    "Select an existing official member ID before approving this account."
-                }
+                val officialMemberId = memberId?.takeIf { it.isNotBlank() }
+                    ?: error("Select an existing official member ID before approving this account.")
                 require(userSnapshot.getString("memberId").isNullOrBlank()) {
                     "This account is already linked to a member."
                 }
-                val memberRef = db.collection("members").document(memberId)
-                val linkRef = db.collection("memberLinks").document(memberId)
+                val memberRef = db.collection("members").document(officialMemberId)
+                val linkRef = db.collection("memberLinks").document(officialMemberId)
 
                 // Read every document before writing: Firestore transactions require this order.
                 val memberSnapshot = transaction.get(memberRef)
@@ -242,12 +241,12 @@ class ClubRepository(
                 }
 
                 transaction.set(linkRef, mapOf(
-                    "memberId" to memberId,
+                    "memberId" to officialMemberId,
                     "userUid" to uid,
                     "linkedBy" to adminUid,
                     "linkedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
                 ))
-                updates["memberId"] = memberId
+                updates["memberId"] = officialMemberId
             }
             transaction.update(userRef, updates)
             null
