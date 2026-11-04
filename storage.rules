@@ -17,6 +17,19 @@ service firebase.storage {
         && firestore.get(userPath(request.auth.uid)).data.approvalStatus == "APPROVED";
     }
 
+    // Shared 501MTB photo library: approved members can upload and browse.
+    match /sharedPhotos/{uid}/{fileName} {
+      allow read: if isApprovedMember() || isAdmin();
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && (isApprovedMember() || isAdmin())
+        && request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if signedIn()
+        && (isAdmin() || (request.auth.uid == uid && isApprovedMember()));
+      allow update: if false;
+    }
+
     // Feed photos are stored in the uploader's own folder.
     match /feed/{uid}/{fileName} {
       allow read: if true;
