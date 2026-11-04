@@ -141,7 +141,7 @@ class PhotoLibraryRepository(
             }
         }
 
-        PhotoLibrary(
+        return PhotoLibrary(
             schemaVersion = root.optInt("schemaVersion", 1),
             baseUrl = baseUrl,
             supportedRatios = root.optJSONArray("supportedRatios").toStringList(),
