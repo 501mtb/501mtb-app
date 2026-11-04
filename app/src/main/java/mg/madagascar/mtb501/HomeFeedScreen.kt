@@ -475,11 +475,19 @@ private fun ShowcaseSectionHeader(
 
 @Composable
 private fun SectionHeading(title: String, subtitle: String) {
-    Column(modifier = Modifier.padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-        Text(title, style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
-        Text(subtitle, style = MaterialTheme.typography.labelSmall,
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black,
+            maxLines = 1, softWrap = false)
+        Text("•", style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(subtitle, style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
     }
 }
 
