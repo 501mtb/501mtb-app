@@ -109,45 +109,48 @@ fun AdminRiderManagementScreen() {
         when {
             loading -> CircularProgressIndicator(Modifier.padding(20.dp))
             error != null -> Unit
-            members.isEmpty() -> Text("No member records found.")
-            filteredMembers.isEmpty() -> Text("No matching members.")
             else -> LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(filteredMembers, key = { it.id }) { member ->
-                    AdminMemberCard(
-                        member = member,
-                        saving = savingId == member.id,
-                        onBadgeChange = { badge ->
-                            scope.launch {
-                                savingId = member.id
-                                try {
-                                    repository.updateMemberBadge(member.id, badge)
-                                    members = members.map { if (it.id == member.id) it.copy(badge = badge) else it }
-                                    message = "${member.name}: badge changed to $badge."
-                                } catch (e: Exception) {
-                                    message = e.localizedMessage ?: "Badge update failed."
-                                } finally {
-                                    savingId = null
+                item { AdminPhotoLibrarySection(onMessage = { message = it }) }
+                when {
+                    members.isEmpty() -> item { Text("No member records found.") }
+                    filteredMembers.isEmpty() -> item { Text("No matching members.") }
+                    else -> items(filteredMembers, key = { it.id }) { member ->
+                        AdminMemberCard(
+                            member = member,
+                            saving = savingId == member.id,
+                            onBadgeChange = { badge ->
+                                scope.launch {
+                                    savingId = member.id
+                                    try {
+                                        repository.updateMemberBadge(member.id, badge)
+                                        members = members.map { if (it.id == member.id) it.copy(badge = badge) else it }
+                                        message = "${member.name}: badge changed to $badge."
+                                    } catch (e: Exception) {
+                                        message = e.localizedMessage ?: "Badge update failed."
+                                    } finally {
+                                        savingId = null
+                                    }
+                                }
+                            },
+                            onVisibilityChange = { visible ->
+                                scope.launch {
+                                    savingId = member.id
+                                    try {
+                                        repository.updateMemberVisibility(member.id, visible)
+                                        members = members.map { if (it.id == member.id) it.copy(publicProfile = visible) else it }
+                                        message = "${member.name}: public profile ${if (visible) "enabled" else "disabled"}."
+                                    } catch (e: Exception) {
+                                        message = e.localizedMessage ?: "Visibility update failed."
+                                    } finally {
+                                        savingId = null
+                                    }
                                 }
                             }
-                        },
-                        onVisibilityChange = { visible ->
-                            scope.launch {
-                                savingId = member.id
-                                try {
-                                    repository.updateMemberVisibility(member.id, visible)
-                                    members = members.map { if (it.id == member.id) it.copy(publicProfile = visible) else it }
-                                    message = "${member.name}: public profile ${if (visible) "enabled" else "disabled"}."
-                                } catch (e: Exception) {
-                                    message = e.localizedMessage ?: "Visibility update failed."
-                                } finally {
-                                    savingId = null
-                                }
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

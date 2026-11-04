@@ -208,3 +208,29 @@ test("member IDs and the counter are not readable by anonymous users", async () 
   await assertFails(getDoc(doc(db, "users/rider")));
   await assertFails(getDoc(doc(db, "counters/memberSequence")));
 });
+
+
+test("photo assignments are public-readable and administrator-writeable", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "photoAssignments/501mtb.pdc"), {
+      slotId: "501mtb.pdc",
+      imageIds: ["pdc_001"]
+    });
+  });
+
+  const publicDb = testEnv.unauthenticatedContext().firestore();
+  await assertSucceeds(getDoc(doc(publicDb, "photoAssignments/501mtb.pdc")));
+
+  await seedUser("admin", undefined, { role: "ADMIN", approvalStatus: "APPROVED" });
+  const riderDb = testEnv.authenticatedContext("rider").firestore();
+  const adminDb = testEnv.authenticatedContext("admin").firestore();
+
+  await assertFails(setDoc(doc(riderDb, "photoAssignments/501mtb.pdc"), {
+    slotId: "501mtb.pdc",
+    imageIds: ["events_002"]
+  }));
+  await assertSucceeds(setDoc(doc(adminDb, "photoAssignments/501mtb.pdc"), {
+    slotId: "501mtb.pdc",
+    imageIds: ["pdc_001"]
+  }));
+});
