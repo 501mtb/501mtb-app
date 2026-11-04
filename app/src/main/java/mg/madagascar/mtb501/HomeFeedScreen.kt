@@ -1,6 +1,7 @@
 package mg.madagascar.mtb501
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,8 +50,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -92,8 +96,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     val pastEvents = remember {
         mutableStateListOf(
             ShowcaseRide(11, "15 OCT 2026", "IVOLOINA • BASSINDRANO", "INTERMEDIATE", "07:00", "Toamasina", "34 km", true),
-            ShowcaseRide(12, "30 AUG 2026", "2ND XC 501MTB RACE", "ELITE", "07:00", "Antanambao TMF", "54 km", true),
-            ShowcaseRide(13, "20 SEP 2026", "TOAMASINA DISCOVERY", "ALL LEVELS", "08:00", "Loca Velo", "26 km", true)
+            ShowcaseRide(13, "20 SEP 2026", "TOAMASINA DISCOVERY", "ALL LEVELS", "08:00", "Loca Velo", "26 km", true),
+            ShowcaseRide(12, "30 AUG 2026", "2ND XC 501MTB RACE", "ELITE", "07:00", "Antanambao TMF", "54 km", true)
         )
     }
     val stories = remember {
@@ -269,18 +273,10 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
         )
     }
     gpsStory?.let { story ->
-        ShowcaseMessageDialog(
-            title = "GPS TRACK • ${story.ride}",
-            message = "A GPS route preview for ${story.name} will appear here. This is a visual demo; no real GPX track is connected.",
-            onDismiss = { gpsStory = null }
-        )
+        GpsShowcaseDialog(story = story, onDismiss = { gpsStory = null })
     }
     profileStory?.let { story ->
-        ShowcaseMessageDialog(
-            title = "${story.name} • RIDER PROFILE",
-            message = "501MTB member profile preview\nBadge: ${story.badge}\nLatest ride: ${story.ride}\nDistance: ${story.distance}",
-            onDismiss = { profileStory = null }
-        )
+        RiderProfileShowcaseDialog(story = story, onDismiss = { profileStory = null })
     }
     commentsFor?.let { target ->
         var draft by remember(target) { mutableStateOf("") }
@@ -698,6 +694,91 @@ private fun AdminShowcaseDialog(action: String, onDismiss: () -> Unit) {
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } }
+    )
+}
+
+@Composable
+private fun GpsShowcaseDialog(story: ShowcaseStory, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("GPS TRACK • ${story.ride}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(190.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF17251F))
+                ) {
+                    Canvas(Modifier.fillMaxSize()) {
+                        val route = Path().apply {
+                            moveTo(size.width * .12f, size.height * .76f)
+                            cubicTo(size.width * .26f, size.height * .12f, size.width * .48f, size.height * .92f, size.width * .58f, size.height * .48f)
+                            cubicTo(size.width * .68f, size.height * .08f, size.width * .78f, size.height * .82f, size.width * .9f, size.height * .22f)
+                        }
+                        drawPath(route, Color(0xFF75E36B), style = Stroke(width = 8f))
+                        drawCircle(Color(0xFF35C96B), radius = 11f, center = Offset(size.width * .12f, size.height * .76f))
+                        drawCircle(Color(0xFFFF6B6B), radius = 11f, center = Offset(size.width * .9f, size.height * .22f))
+                    }
+                    Text(
+                        "ROUTE PREVIEW",
+                        modifier = Modifier.align(Alignment.TopStart).padding(10.dp)
+                            .clip(RoundedCornerShape(6.dp)).background(Color.Black.copy(alpha = .65f)).padding(6.dp),
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Text(story.ride, fontWeight = FontWeight.Bold)
+                Text("${story.distance}  •  ${story.date}")
+                Text(
+                    "Illustrative GPS route only. No real GPX track is connected yet.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("CLOSE") } }
+    )
+}
+
+@Composable
+private fun RiderProfileShowcaseDialog(story: ShowcaseStory, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("RIDER PROFILE") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+                        .background(Brush.linearGradient(listOf(Color(0xFF102A20), Color(0xFF527A42))))
+                        .padding(18.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text("501MTB", color = Color.White.copy(alpha = .8f), style = MaterialTheme.typography.labelSmall)
+                        Text(story.name, color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                        Text(story.badge, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Text("LATEST RIDE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text(story.ride, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(12.dp)) {
+                        Text("DISTANCE", style = MaterialTheme.typography.labelSmall)
+                        Text(story.distance, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(12.dp)) {
+                        Text("RIDE DATE", style = MaterialTheme.typography.labelSmall)
+                        Text(story.date, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Text(
+                    "Showcase profile. Member statistics and personal records will be connected later.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("CLOSE") } }
     )
 }
 
