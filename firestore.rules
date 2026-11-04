@@ -71,7 +71,9 @@ service cloud.firestore {
       // Existing profiles without an ID may receive one; other account changes remain admin-only.
       allow update: if isAdmin()
         || (isOwnUser(uid)
-          && !resource.data.keys().hasAny(["memberId"])
+          && (!resource.data.keys().hasAny(["memberId"])
+            || resource.data.memberId == null
+            || resource.data.memberId == "")
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["memberId"])
           && request.resource.data.memberId is string
           && request.resource.data.memberId.matches("R-[0-9]{3}")
