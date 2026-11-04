@@ -77,11 +77,14 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
         } catch (_: Exception) {
             membersFailed = true
         }
-        // Resolve the administrator-selected shared-library covers. Photo binaries
-        // remain on GitHub Pages; only their IDs are stored in Firestore.
+        loading = false
+    }
+
+    // Optional artwork loads separately so a slow GitHub catalogue does not
+    // delay the ride and community content from appearing on screen.
+    LaunchedEffect(Unit) {
         try {
-            val photoRepository = PhotoLibraryRepository()
-            val library = photoRepository.load()
+            val library = PhotoLibraryRepository().load()
             val ridePhotoIds = repository.getPhotoAssignment("rides")
             rideCoverUrl = ridePhotoIds.firstOrNull()?.let { id ->
                 library.imagesForSlot("rides").firstOrNull { it.id == id }?.url
@@ -93,7 +96,6 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
         } catch (_: Exception) {
             // Keep the branded placeholders when the online catalogue is unavailable.
         }
-        loading = false
     }
 
     Column(
