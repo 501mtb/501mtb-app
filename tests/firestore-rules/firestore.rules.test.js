@@ -20,7 +20,11 @@ before(async () => {
   });
 });
 
-beforeEach(async () => {\n  await testEnv.clearFirestore();\n});\n\nafter(async () => {
+beforeEach(async () => {
+  await testEnv.clearFirestore();
+});
+
+after(async () => {
   await testEnv?.cleanup();
 });
 
