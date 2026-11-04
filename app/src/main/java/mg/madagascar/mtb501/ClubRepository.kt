@@ -194,6 +194,21 @@ class ClubRepository(
             )
         }.sortedBy { it.name }
 
+    suspend fun updateMemberBadge(memberId: String, badge: String) {
+        require(memberId.isNotBlank()) { "Member ID is missing." }
+        require(badge in setOf("Rookie", "Super", "Elite", "Leader", "Top Member", "Admin", "Ambassador")) {
+            "Invalid member badge."
+        }
+        require(getMyAccount()?.role == AppRole.ADMIN) { "Administrator access is required." }
+        db.collection("members").document(memberId).update("badge", badge).await()
+    }
+
+    suspend fun updateMemberVisibility(memberId: String, visible: Boolean) {
+        require(memberId.isNotBlank()) { "Member ID is missing." }
+        require(getMyAccount()?.role == AppRole.ADMIN) { "Administrator access is required." }
+        db.collection("members").document(memberId).update("publicProfile", visible).await()
+    }
+
     suspend fun getRideAttendance(rideId: String): Map<String, ClubAttendance> {
         require(rideId.isNotBlank()) { "Ride ID is missing." }
         return db.collection("rides").document(rideId).collection("attendance")
