@@ -85,8 +85,8 @@ fun OfficialMemberAdminSection(onMessage: (String) -> Unit) {
             }) { Text(if (busy) "Please wait…" else "Add member") }
 
             Text("Member directory", style = MaterialTheme.typography.titleSmall)
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
-                items(members, key = { it.memberId }) { member ->
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+                members.forEach { member ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(member.memberId, style = MaterialTheme.typography.bodySmall)
                         Text(member.name, style = MaterialTheme.typography.bodyMedium)
