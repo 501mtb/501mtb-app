@@ -336,9 +336,13 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             SectionHeading("COMMUNITY", "MEMBER RIDE STORIES")
             LazyRow(
+                modifier = Modifier.fillMaxHeight(),
                 contentPadding = PaddingValues(horizontal = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -608,11 +612,11 @@ private fun CommunityStoryCard(
     onAdmin: (String) -> Unit
 ) {
     Card(
-        modifier = Modifier.width(120.dp),
+        modifier = Modifier.width(120.dp).fillMaxHeight(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f)) {
+        Box(Modifier.fillMaxSize()) {
             PhotoArtwork(story.name, Modifier.fillMaxSize().clickable(onClick = onOpen), 2, story.photoUrl)
             Column(
                 modifier = Modifier.align(Alignment.TopStart).padding(7.dp)
