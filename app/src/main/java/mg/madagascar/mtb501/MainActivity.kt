@@ -26,7 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.DynamicFeed
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Shield
@@ -92,7 +92,7 @@ private data class AppTab(
 )
 
 private val appTabs = listOf(
-    AppTab("feed", "Feed", Icons.Default.DynamicFeed),
+    AppTab("feed", "Home", Icons.Default.Home),
     AppTab("home", "501 Profile", Icons.Default.Groups),
     AppTab("record", "Record Ride", Icons.Default.DirectionsBike),
     AppTab("chat", "Chat", Icons.Default.ChatBubbleOutline),
@@ -185,7 +185,8 @@ private fun ClubApp() {
             startDestination = "feed",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("feed") { FeedScreen(onOpenPhotoLibrary = { navController.navigate("photos") }) }
+            composable("feed") { HomeFeedScreen(onOpenCommunityFeed = { navController.navigate("community-feed") }) }
+            composable("community-feed") { FeedScreen(onOpenPhotoLibrary = { navController.navigate("photos") }) }
             composable("photos") { SharedPhotoLibraryScreen() }
             composable("home") { HomeScreen() }
             composable("record") { RecordRideScreen() }
