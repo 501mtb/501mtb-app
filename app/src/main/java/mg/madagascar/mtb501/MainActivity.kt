@@ -183,7 +183,7 @@ private fun ClubApp() {
             composable("home") { HomeScreen() }
             composable("record") { RecordRideScreen() }
             composable("chat") { ChatScreen() }
-            composable("rider") { RiderProfileScreen() }
+            composable("rider") { if (isAdmin) AdminRiderManagementScreen() else RiderProfileScreen() }
             composable("rides") { RidesScreen() }
             composable("events") { EventsScreen() }
             composable("riders") { RidersScreen() }
