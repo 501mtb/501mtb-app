@@ -233,7 +233,7 @@ fun AdminPanel() {
                                 onClick = {
                                 scope.launch {
                                     try {
-                                        repository.reviewAccount(account.uid, true, localMemberId.trim())
+                                        repository.reviewAccount(account.uid, true, localMemberId.trim().uppercase())
                                         message = "Account approved."
                                         refresh()
                                     } catch (e: Exception) {
