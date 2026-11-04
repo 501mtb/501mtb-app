@@ -303,13 +303,27 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
         ShowcaseSectionHeader("NEXT RIDE", "UPCOMING MTB RIDES", demoAdmin) {
             adminMessage = "Add a new Next Ride"
         }
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 18.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            items(nextRides, key = { it.id }) { ride ->
-                NextRideCard(
-                    modifier = Modifier.fillParentMaxWidth(),
+        nextRides.firstOrNull()?.let { ride ->
+            NextRideCard(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+                ride = ride,
+                admin = demoAdmin,
+                onOpen = { selectedRide = ride },
+                onAdmin = { action -> adminMessage = "$action: ${ride.title}" },
+                onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
+                isFired = fired[ride.id] ?: false,
+                onComment = { commentsFor = ride.title },
+                onShare = { shareMessage = "Share preview: ${ride.title}" }
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            ShowcaseSectionHeader("PAST EVENT", "MTB EVENT", demoAdmin) {
+                adminMessage = "Add a Past Event"
+            }
+            pastEvents.firstOrNull()?.let { ride ->
+                PastEventCard(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                     ride = ride,
                     admin = demoAdmin,
                     onOpen = { selectedRide = ride },
@@ -319,30 +333,6 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                     onComment = { commentsFor = ride.title },
                     onShare = { shareMessage = "Share preview: ${ride.title}" }
                 )
-            }
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            ShowcaseSectionHeader("PAST EVENT", "MTB EVENT", demoAdmin) {
-                adminMessage = "Add a Past Event"
-            }
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 18.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                items(pastEvents, key = { it.id }) { ride ->
-                    PastEventCard(
-                        modifier = Modifier.fillParentMaxWidth(),
-                        ride = ride,
-                        admin = demoAdmin,
-                        onOpen = { selectedRide = ride },
-                        onAdmin = { action -> adminMessage = "$action: ${ride.title}" },
-                        onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
-                        isFired = fired[ride.id] ?: false,
-                        onComment = { commentsFor = ride.title },
-                        onShare = { shareMessage = "Share preview: ${ride.title}" }
-                    )
-                }
             }
         }
 
@@ -505,34 +495,34 @@ private fun NextRideCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                    Text("${ride.date}  •  ${ride.level}", color = MaterialTheme.colorScheme.primary,
+        Box(
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 8.6f)
+                .clip(RoundedCornerShape(16.dp)).clickable(onClick = onOpen)
+        ) {
+            PhotoArtwork(ride.title, Modifier.fillMaxSize(), 0, ridePhotoUrl(ride))
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth()
+                .background(Color.Black.copy(alpha = .68f)).padding(start = 12.dp, end = 104.dp, top = 9.dp, bottom = 9.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("${ride.date}  •  ${ride.level}", color = Color(0xFF8DFF75),
                         style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, maxLines = 1)
-                    Text(ride.title, style = MaterialTheme.typography.titleSmall,
+                    Text(ride.title, color = Color.White, style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text("${ride.time}  •  MEET: ${ride.meeting}  •  ${ride.distance}",
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.White.copy(alpha = .9f), style = MaterialTheme.typography.labelSmall,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                if (admin) AdminMenuButton(onAction = onAdmin)
             }
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(5.dp)
+                    .clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = .72f)),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PhotoArtwork(ride.title, Modifier.weight(1f).aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(11.dp)).clickable(onClick = onOpen), 0, ridePhotoUrl(ride))
-                RideActions(
-                    isFired, onFire, onComment, onShare, onOpen,
-                    modifier = Modifier.width(38.dp)
-                )
+                RideActionButtons(isFired, onFire, onComment, onShare, onOpen)
             }
+            if (admin) Box(Modifier.align(Alignment.TopEnd).padding(5.dp)) { AdminMenuButton(onAction = onAdmin) }
         }
     }
 }
@@ -554,32 +544,55 @@ private fun PastEventCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                    Text(ride.date, color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black)
-                    Text(ride.title, style = MaterialTheme.typography.titleSmall,
+        Box(
+            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 8.6f)
+                .clip(RoundedCornerShape(16.dp)).clickable(onClick = onOpen)
+        ) {
+            PhotoArtwork(ride.title, Modifier.fillMaxSize(), 1, ridePhotoUrl(ride))
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth()
+                .background(Color.Black.copy(alpha = .68f)).padding(start = 12.dp, end = 104.dp, top = 9.dp, bottom = 9.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(ride.date, color = Color(0xFF8DFF75),
+                        style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, maxLines = 1)
+                    Text(ride.title, color = Color.White, style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text("${ride.distance}  •  ${ride.level}  •  ${ride.meeting}",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        color = Color.White.copy(alpha = .9f), style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                if (admin) AdminMenuButton(onAction = onAdmin)
             }
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(5.dp)
+                    .clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = .72f)),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PhotoArtwork(ride.title, Modifier.weight(1f).aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(11.dp)).clickable(onClick = onOpen), 1, ridePhotoUrl(ride))
-                RideActions(
-                    isFired, onFire, onComment, onShare, onOpen,
-                    modifier = Modifier.width(38.dp)
-                )
+                RideActionButtons(isFired, onFire, onComment, onShare, onOpen)
             }
+            if (admin) Box(Modifier.align(Alignment.TopEnd).padding(5.dp)) { AdminMenuButton(onAction = onAdmin) }
         }
+    }
+}
+
+@Composable
+private fun RideActionButtons(
+    isFired: Boolean,
+    onFire: () -> Unit,
+    onComment: () -> Unit,
+    onShare: () -> Unit,
+    onOpen: () -> Unit
+) {
+    IconButton(onClick = onFire, modifier = Modifier.size(34.dp)) {
+        Icon(Icons.Default.Favorite, contentDescription = if (isFired) "Remove Fire reaction" else "Fire",
+            tint = if (isFired) Color(0xFFFF4D4D) else Color.White, modifier = Modifier.size(17.dp))
+    }
+    IconButton(onClick = onComment, modifier = Modifier.size(34.dp)) {
+        Icon(Icons.Default.ChatBubbleOutline, contentDescription = "Comments", tint = Color.White, modifier = Modifier.size(17.dp))
+    }
+    IconButton(onClick = onShare, modifier = Modifier.size(34.dp)) {
+        Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White, modifier = Modifier.size(17.dp))
+    }
+    IconButton(onClick = onOpen, modifier = Modifier.size(34.dp)) {
+        Icon(Icons.Default.ArrowForward, contentDescription = "Ride details", tint = Color.White, modifier = Modifier.size(17.dp))
     }
 }
 
