@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -607,6 +608,7 @@ private fun RideShowcaseDialog(
     onShare: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val uriHandler = LocalUriHandler.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(ride.title) },
@@ -625,6 +627,15 @@ private fun RideShowcaseDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     repeat(3) { index ->
                         PhotoArtwork("PHOTO ${index + 1}", Modifier.weight(1f).aspectRatio(1f), index, galleryPhotoUrl(index))
+                    }
+                }
+                if (ride.id == 11) {
+                    OutlinedButton(
+                        onClick = { uriHandler.openUri("https://www.facebook.com/61559342776527/posts/122234023292311425/?app=fbl") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.OpenInNew, contentDescription = null)
+                        Text("OPEN ORIGINAL FACEBOOK POST")
                     }
                 }
                 Text("501MTB reactions and comments are shown here in the finished app.")
