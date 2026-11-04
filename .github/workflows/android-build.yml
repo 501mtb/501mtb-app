@@ -47,6 +47,10 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Prepare friendly APK filename
+        if: github.ref == 'refs/heads/feature/shared-photo-library' && github.event_name != 'pull_request'
+        run: cp app/build/outputs/apk/debug/app-debug.apk 501MTB.apk
+
       - name: Publish latest test APK for the website
         if: github.ref == 'refs/heads/feature/shared-photo-library' && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
@@ -60,6 +64,6 @@ jobs:
             This is a development build, not a production release.
           prerelease: true
           make_latest: false
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: 501MTB.apk
           overwrite_files: true
           fail_on_unmatched_files: true
