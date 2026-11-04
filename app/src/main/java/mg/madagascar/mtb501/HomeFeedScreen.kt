@@ -122,6 +122,11 @@ private fun showcaseDate(value: String): String {
     if (parts.size == 3 && parts[0].length == 4) return parts[2] + "/" + parts[1] + "/" + parts[0]
     return raw.ifBlank { "DATE TBA" }
 }
+private fun showcaseDateKey(value: String): String {
+    val parts = value.split("/")
+    return if (parts.size == 3) parts[2] + parts[1] + parts[0] else value
+}
+
 @Composable
 fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     val nextRides = remember {
@@ -191,8 +196,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                         externalUrl = row.v2Text("url", "facebook_url", "link").ifBlank { null }
                     )
                 }
-                val upcoming = events.filter { !it.completed }.sortedBy { it.date }
-                val past = events.filter { it.completed }.sortedByDescending { it.date }
+                val upcoming = events.filter { !it.completed }.sortedBy { showcaseDateKey(it.date) }
+                val past = events.filter { it.completed }.sortedByDescending { showcaseDateKey(it.date) }
                 if (upcoming.isNotEmpty()) { nextRides.clear(); nextRides.addAll(upcoming) }
                 if (past.isNotEmpty()) { pastEvents.clear(); pastEvents.addAll(past) }
                 val riderRows = sheets.optJSONArray("Riders") ?: JSONArray()
