@@ -208,7 +208,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                     if (row.v2Text("name").isBlank()) return@mapNotNull null
                     row
                 }
-                val registryNames = listOf("MemberRides", "Member Rides", "Member_Rides", "RideLog", "Ride Log", "RideRegistry", "Ride Registry")
+                val registryNames = listOf("MemberRides", "Member Rides", "Member_Rides", "Member Ride", "Member_Ride", "IndividualRides", "Individual Rides", "Individual_Rides", "Member Ride Registry", "RideLog", "Ride Log", "RideRegistry", "Ride Registry")
                 val registry = registryNames.firstNotNullOfOrNull { sheets.optJSONArray(it) }
                 val memberStories = mutableListOf<ShowcaseStory>()
                 if (registry != null) {
