@@ -221,7 +221,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                     )
                 }
             }
-            if (stories.size > 6) {
+            if (storyPage * 8 + visibleStoryCount < stories.size) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                     horizontalArrangement = Arrangement.End
