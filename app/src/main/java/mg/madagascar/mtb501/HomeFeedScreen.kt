@@ -106,7 +106,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             ShowcaseStory(24, "MIKA", "SUPER", "Sunday Ride", "31 km", "05 OCT 2026"),
             ShowcaseStory(25, "SYLVANO", "ELITE", "XC Training", "46 km", "02 OCT 2026"),
             ShowcaseStory(26, "YAKI", "SUPER", "Ivoloina Trail", "34 km", "28 SEP 2026")
-        )
+        ).apply { shuffle() }
     }
 
     var demoAdmin by remember { mutableStateOf(false) }
@@ -353,9 +353,11 @@ private fun NextRideCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
+                    if (admin) AdminMenuButton(onAction = { onAdmin(it) })
                     Column(
-                        modifier = Modifier.clip(RoundedCornerShape(9.dp))
+                        modifier = Modifier.width(238.dp).clip(RoundedCornerShape(9.dp))
                             .background(Color.Black.copy(alpha = .78f)).padding(9.dp),
+                        horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
                         Text(ride.date, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
@@ -363,7 +365,6 @@ private fun NextRideCard(
                         Text("${ride.level}  •  ${ride.time}", color = Color.White, style = MaterialTheme.typography.labelSmall)
                         Text("MEET: ${ride.meeting}", color = Color.White, style = MaterialTheme.typography.labelSmall)
                     }
-                    if (admin) AdminMenuButton(onAction = { onAdmin(it) })
                 }
             }
             RideActions(ride.id, isFired, onFire, onComment, onShare, onOpen)
