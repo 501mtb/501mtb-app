@@ -3,6 +3,12 @@ package mg.madagascar.mtb501
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -223,6 +229,8 @@ private fun HomeScreen() {
     var memberId by remember { mutableStateOf<String?>(null) }
     var isSigningIn by remember { mutableStateOf(false) }
     var authMessage by remember { mutableStateOf<String?>(null) }
+    var coverUrls by remember { mutableStateOf<List<String>>(emptyList()) }
+    var coverIndex by remember { mutableStateOf(0) }
 
     DisposableEffect(auth) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -242,6 +250,27 @@ private fun HomeScreen() {
             } catch (error: Exception) {
                 authMessage = error.localizedMessage ?: "Your 501MTB ID could not be loaded."
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            val repository = ClubRepository()
+            val library = PhotoLibraryRepository().load()
+            val selectedIds = repository.getPhotoAssignment("501mtb.pdc")
+            val available = library.imagesForSlot("501mtb.pdc").associateBy { it.id }
+            coverUrls = selectedIds.mapNotNull { available[it]?.url }
+                .ifEmpty { library.imagesForSlot("501mtb.pdc").map { it.url } }
+            coverIndex = 0
+        } catch (_: Exception) {
+            // Keep the profile usable if the remote photo catalogue is temporarily unavailable.
+        }
+    }
+
+    LaunchedEffect(coverUrls) {
+        while (coverUrls.size > 1) {
+            delay(6000)
+            coverIndex = (coverIndex + 1) % coverUrls.size
         }
     }
 
@@ -290,6 +319,17 @@ private fun HomeScreen() {
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+        }
+
+        if (coverUrls.isNotEmpty()) {
+            AsyncImage(
+                model = coverUrls.getOrNull(coverIndex),
+                contentDescription = "501MTB official profile cover",
+                modifier = Modifier.fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(18.dp)),
+                contentScale = ContentScale.Crop
+            )
         }
 
         ProfileInfoCard(
