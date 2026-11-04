@@ -42,20 +42,22 @@ private val photoTargets = listOf(
 fun AdminPhotoLibrarySection(
     onMessage: (String) -> Unit
 ) {
-    val repository = remember { PhotoLibraryRepository() }
+    val libraryRepository = remember { PhotoLibraryRepository() }
+    val clubRepository = remember { ClubRepository() }
     val scope = rememberCoroutineScope()
     var library by remember { mutableStateOf<PhotoLibrary?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedTarget by remember { mutableStateOf(photoTargets.first().first) }
     var targetMenuExpanded by remember { mutableStateOf(false) }
-    var selectedPhoto by remember { mutableStateOf<PhotoLibraryImage?>(null) }
+    var selectedPhotos by remember { mutableStateOf<List<PhotoLibraryImage>>(emptyList()) }
 
     suspend fun reload() {
         loading = true
         error = null
         try {
-            library = repository.load()
+            library = libraryRepository.load()
         } catch (e: Exception) {
             error = e.localizedMessage ?: "Photo library could not be loaded."
         } finally {
@@ -72,10 +74,28 @@ fun AdminPhotoLibrarySection(
         "501mtb.pdp" -> "1:1"
         else -> "16:9"
     }
+    val category = when (selectedTarget) {
+        "501mtb.pdp" -> "pdp"
+        "501mtb.pdc" -> "pdc"
+        else -> selectedTarget
+    }
     val photos = when (selectedTarget) {
         "501mtb.pdp", "501mtb.pdc" -> currentLibrary?.imagesForSlot(selectedTarget).orEmpty()
         else -> currentLibrary?.imagesForRatio(requiredRatio)
-            ?.filter { it.category == selectedTarget }.orEmpty()
+            ?.filter { it.category == category }.orEmpty()
+    }
+    val isSlideshow = selectedTarget == "501mtb.pdc"
+
+    LaunchedEffect(selectedTarget, currentLibrary) {
+        selectedPhotos = emptyList()
+        if (currentLibrary != null) {
+            try {
+                val savedIds = clubRepository.getPhotoAssignment(selectedTarget)
+                selectedPhotos = photos.filter { it.id in savedIds }.sortedBy { savedIds.indexOf(it.id) }
+            } catch (_: Exception) {
+                // No existing assignment yet, or the signed-in user cannot read it.
+            }
+        }
     }
 
     Card(
@@ -92,7 +112,7 @@ fun AdminPhotoLibrarySection(
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                "Photos are loaded directly from the official 501MTB website. The app does not upload or duplicate these files.",
+                "Photos are loaded from the official 501MTB website. Only their references are saved in Firestore.",
                 style = MaterialTheme.typography.bodySmall
             )
 
@@ -108,7 +128,7 @@ fun AdminPhotoLibrarySection(
                         text = { Text(label) },
                         onClick = {
                             selectedTarget = id
-                            selectedPhoto = null
+                            selectedPhotos = emptyList()
                             targetMenuExpanded = false
                         }
                     )
@@ -116,6 +136,11 @@ fun AdminPhotoLibrarySection(
             }
 
             Text("Required ratio: $requiredRatio", style = MaterialTheme.typography.labelLarge)
+            if (isSlideshow) {
+                Text("PDC slideshow: tap several photos to select them. Their order follows your selection.", style = MaterialTheme.typography.bodySmall)
+            } else {
+                Text("Choose one compatible photo.", style = MaterialTheme.typography.bodySmall)
+            }
 
             when {
                 loading -> CircularProgressIndicator()
@@ -125,7 +150,7 @@ fun AdminPhotoLibrarySection(
                 }
                 photos.isEmpty() -> {
                     Text(
-                        "No compatible photos are listed for this target yet. Add WebP images and their metadata to the website photo catalogue first.",
+                        "No compatible photos are listed for this target yet. Add WebP images and metadata to the website catalogue first.",
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Button(onClick = { scope.launch { reload() } }) { Text("Refresh library") }
@@ -138,12 +163,20 @@ fun AdminPhotoLibrarySection(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             rowPhotos.forEach { photo ->
+                                val isSelected = selectedPhotos.any { it.id == photo.id }
                                 Card(
                                     modifier = Modifier.weight(1f),
                                     onClick = {
-                                        selectedPhoto = photo
-                                        onMessage("Selected ${photo.fileName}. Saving its assignment is the next step.")
-                                    }
+                                        selectedPhotos = if (isSlideshow) {
+                                            if (isSelected) selectedPhotos.filterNot { it.id == photo.id }
+                                            else selectedPhotos + photo
+                                        } else {
+                                            listOf(photo)
+                                        }
+                                    },
+                                    border = if (isSelected) androidx.compose.foundation.BorderStroke(
+                                        2.dp, MaterialTheme.colorScheme.primary
+                                    ) else null
                                 ) {
                                     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                         AsyncImage(
@@ -159,7 +192,7 @@ fun AdminPhotoLibrarySection(
                                             contentScale = ContentScale.Crop
                                         )
                                         Text(
-                                            photo.fileName,
+                                            if (isSelected) "✓ ${photo.fileName}" else photo.fileName,
                                             modifier = Modifier.padding(horizontal = 7.dp),
                                             style = MaterialTheme.typography.labelSmall,
                                             maxLines = 2
@@ -173,19 +206,45 @@ fun AdminPhotoLibrarySection(
                                     }
                                 }
                             }
-                            if (rowPhotos.size == 1) {
-                                Column(Modifier.weight(1f)) {}
-                            }
+                            if (rowPhotos.size == 1) Column(Modifier.weight(1f)) {}
                         }
                     }
-                    selectedPhoto?.let { photo ->
-                        Text(
-                            "Selected: ${photo.fileName}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+
+                    Text(
+                        "Selected: ${selectedPhotos.size}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Button(
+                        enabled = selectedPhotos.isNotEmpty() && !saving,
+                        onClick = {
+                            scope.launch {
+                                saving = true
+                                try {
+                                    clubRepository.savePhotoAssignment(
+                                        slotId = selectedTarget,
+                                        category = category,
+                                        requiredRatio = requiredRatio,
+                                        photos = selectedPhotos
+                                    )
+                                    onMessage(
+                                        if (isSlideshow) "PDC slideshow saved with ${selectedPhotos.size} photos."
+                                        else "Photo assignment saved."
+                                    )
+                                } catch (e: Exception) {
+                                    onMessage(e.localizedMessage ?: "Photo assignment could not be saved.")
+                                } finally {
+                                    saving = false
+                                }
+                            }
+                        }
+                    ) {
+                        Text(if (saving) "Saving…" else "Save assignment")
                     }
-                    Button(onClick = { scope.launch { reload() } }) { Text("Refresh library") }
+                    Button(
+                        enabled = !saving,
+                        onClick = { scope.launch { reload() } }
+                    ) { Text("Refresh library") }
                 }
             }
         }
