@@ -59,6 +59,7 @@ data class PendingAccount(
     val uid: String = "",
     val email: String = "",
     val displayName: String = "",
+    val memberId: String = "",
     val approvalStatus: ApprovalStatus = ApprovalStatus.PENDING
 )
 
@@ -78,21 +79,49 @@ class ClubRepository(
 ) {
     suspend fun ensurePendingAccount() {
         val user = auth.currentUser ?: return
-        val ref = db.collection("users").document(user.uid)
-        val existing = ref.get().await()
-        if (!existing.exists()) {
-            ref.set(
+        val userRef = db.collection("users").document(user.uid)
+        val counterRef = db.collection("counters").document("memberSequence")
+
+        db.runTransaction { transaction ->
+            val userSnapshot = transaction.get(userRef)
+            if (userSnapshot.exists() && !userSnapshot.getString("memberId").isNullOrBlank()) {
+                return@runTransaction null
+            }
+
+            val counterSnapshot = transaction.get(counterRef)
+            val lastIssued = counterSnapshot.getLong("lastIssued") ?: 0L
+            require(lastIssued < 999L) { "501MTB member ID sequence is exhausted." }
+            val nextNumber = lastIssued + 1L
+            val memberId = "R-${nextNumber.toString().padStart(3, '0')}"
+
+            transaction.set(
+                counterRef,
                 mapOf(
-                    "uid" to user.uid,
-                    "email" to (user.email ?: ""),
-                    "displayName" to (user.displayName ?: ""),
-                    "photoURL" to user.photoUrl?.toString(),
-                    "role" to AppRole.USER.name,
-                    "approvalStatus" to ApprovalStatus.PENDING.name,
-                    "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                    "lastIssued" to nextNumber,
+                    "lastIssuedId" to memberId,
+                    "lastIssuedBy" to user.uid
                 )
-            ).await()
-        }
+            )
+
+            if (userSnapshot.exists()) {
+                transaction.update(userRef, "memberId", memberId)
+            } else {
+                transaction.set(
+                    userRef,
+                    mapOf(
+                        "uid" to user.uid,
+                        "email" to (user.email ?: ""),
+                        "displayName" to (user.displayName ?: ""),
+                        "photoURL" to user.photoUrl?.toString(),
+                        "role" to AppRole.USER.name,
+                        "approvalStatus" to ApprovalStatus.PENDING.name,
+                        "memberId" to memberId,
+                        "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                    )
+                )
+            }
+            null
+        }.await()
     }
 
     suspend fun getMyAccount(): ClubUser? {
@@ -199,11 +228,12 @@ class ClubRepository(
                 PendingAccount(
                     uid = doc.id,
                     email = doc.getString("email") ?: "",
-                    displayName = doc.getString("displayName") ?: ""
+                    displayName = doc.getString("displayName") ?: "",
+                    memberId = doc.getString("memberId") ?: ""
                 )
             }.sortedBy { it.displayName }
 
-    suspend fun reviewAccount(uid: String, approve: Boolean, memberId: String? = null) {
+    suspend fun reviewAccount(uid: String, approve: Boolean) {
         require(uid.isNotBlank()) { "Account ID is missing." }
         val adminUid = auth.currentUser?.uid ?: error("Administrator sign-in is required.")
         val userRef = db.collection("users").document(uid)
@@ -213,45 +243,14 @@ class ClubRepository(
             require(userSnapshot.getString("approvalStatus") == ApprovalStatus.PENDING.name) {
                 "This account has already been reviewed."
             }
-            val updates = mutableMapOf<String, Any>(
-                "approvalStatus" to if (approve) ApprovalStatus.APPROVED.name else ApprovalStatus.REJECTED.name,
-                "reviewedBy" to adminUid,
-                "reviewedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            transaction.update(
+                userRef,
+                mapOf(
+                    "approvalStatus" to if (approve) ApprovalStatus.APPROVED.name else ApprovalStatus.REJECTED.name,
+                    "reviewedBy" to adminUid,
+                    "reviewedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
             )
-            if (approve) {
-                val officialMemberId = memberId?.trim()?.uppercase()?.takeIf { it.isNotBlank() }
-                    ?: error("Select an existing official member ID before approving this account.")
-                require(officialMemberId.matches(Regex("[MW]-\\d{3}"))) {
-                    "Enter a valid official member ID, for example M-056."
-                }
-                require(userSnapshot.getString("memberId").isNullOrBlank()) {
-                    "This account is already linked to a member."
-                }
-                val memberRef = db.collection("members").document(officialMemberId)
-                val linkRef = db.collection("memberLinks").document(officialMemberId)
-
-                // Read every document before writing: Firestore transactions require this order.
-                val memberSnapshot = transaction.get(memberRef)
-                val linkSnapshot = transaction.get(linkRef)
-                require(memberSnapshot.exists() && memberSnapshot.getString("memberId") == officialMemberId) {
-                    "The selected official member ID does not exist in the official register."
-                }
-                require(memberSnapshot.getBoolean("active") != false) {
-                    "This official member is inactive and cannot be linked."
-                }
-                require(!linkSnapshot.exists()) {
-                    "This official member is already linked to another Google account."
-                }
-
-                transaction.set(linkRef, mapOf(
-                    "memberId" to officialMemberId,
-                    "userUid" to uid,
-                    "linkedBy" to adminUid,
-                    "linkedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
-                ))
-                updates["memberId"] = officialMemberId
-            }
-            transaction.update(userRef, updates)
             null
         }.await()
     }
