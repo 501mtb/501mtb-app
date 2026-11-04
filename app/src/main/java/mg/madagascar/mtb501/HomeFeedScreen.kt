@@ -118,7 +118,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     var shareMessage by remember { mutableStateOf<String?>(null) }
     var adminMessage by remember { mutableStateOf<String?>(null) }
     val fired = remember { mutableStateMapOf<Int, Boolean>() }
-    val commentCounts = remember { mutableStateMapOf<Int, Int>() }
+    val demoComments = remember { mutableStateMapOf<String, List<String>>() }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 12.dp),
@@ -264,7 +264,14 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(target, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    Text("No comments yet. Be the first to join the conversation.")
+                    val existingComments = demoComments[target].orEmpty()
+                    if (existingComments.isEmpty()) {
+                        Text("No comments yet. Be the first to join the conversation.")
+                    } else {
+                        existingComments.forEach { comment ->
+                            Text("• $comment", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
                     androidx.compose.material3.OutlinedTextField(
                         value = draft, onValueChange = { draft = it },
                         modifier = Modifier.fillMaxWidth(), label = { Text("Write a demo comment") }
@@ -273,7 +280,9 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    commentCounts[ target.hashCode() ] = (commentCounts[target.hashCode()] ?: 0) + 1
+                    if (draft.isNotBlank()) {
+                        demoComments[target] = demoComments[target].orEmpty() + draft.trim()
+                    }
                     commentsFor = null
                 }) { Text("POST DEMO COMMENT") }
             },
@@ -288,9 +297,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
         )
     }
     adminMessage?.let { message ->
-        ShowcaseMessageDialog(
-            title = "ADMIN SHOWCASE",
-            message = "$message\n\nThis is a UI demonstration. Create, edit and delete are not saved.",
+        AdminShowcaseDialog(
+            action = message,
             onDismiss = { adminMessage = null }
         )
     }
@@ -606,6 +614,59 @@ private fun StoryDetailDialog(
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("CLOSE") } }
+    )
+}
+
+@Composable
+private fun AdminShowcaseDialog(action: String, onDismiss: () -> Unit) {
+    var title by remember(action) { mutableStateOf(action.substringAfter(": ", action)) }
+    var date by remember(action) { mutableStateOf("01 DEC 2026") }
+    var details by remember(action) { mutableStateOf("Add level, time, meeting point or event details") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("ADMIN • $action") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Text(
+                    "SHOWCASE FORM",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                androidx.compose.material3.OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Title") },
+                    singleLine = true
+                )
+                androidx.compose.material3.OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Date") },
+                    singleLine = true
+                )
+                androidx.compose.material3.OutlinedTextField(
+                    value = details,
+                    onValueChange = { details = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Details") },
+                    minLines = 2
+                )
+                Text(
+                    "Demo only: Save or Delete will not change any real 501MTB records.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(if (action.startsWith("Delete")) "CONFIRM DEMO DELETE" else "SAVE DEMO")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } }
     )
 }
 
