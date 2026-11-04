@@ -239,7 +239,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                             badge = row.v2Text("category", "badge", "status").uppercase().ifBlank { "RIDER" },
                             ride = "MEMBER RIDE", distance = "—", date = "501MTB RIDER",
                             photoUrl = v2AssetUrl(row.v2Text("photo")),
-                            profileUrl = row.v2Text("profile_url").ifBlank { null }
+                            profileUrl = row.v2Text("profile_url").takeIf { it.isNotBlank() }
                         )
                     }
                 }
