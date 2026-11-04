@@ -855,6 +855,7 @@ private fun AdminShowcaseDialog(action: String, onDismiss: () -> Unit) {
 
 @Composable
 private fun GpsShowcaseDialog(story: ShowcaseStory, onDismiss: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("GPS TRACK • ${story.ride}") },
@@ -893,12 +894,18 @@ private fun GpsShowcaseDialog(story: ShowcaseStory, onDismiss: () -> Unit) {
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("CLOSE") } }
+        confirmButton = {
+            Row {
+                story.gpsUrl?.let { url -> TextButton(onClick = { uriHandler.openUri(url) }) { Text("OPEN GPS TRACK") } }
+                TextButton(onClick = onDismiss) { Text("CLOSE") }
+            }
+        }
     )
 }
 
 @Composable
 private fun RiderProfileShowcaseDialog(story: ShowcaseStory, onDismiss: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("RIDER PROFILE") },
@@ -934,7 +941,12 @@ private fun RiderProfileShowcaseDialog(story: ShowcaseStory, onDismiss: () -> Un
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("CLOSE") } }
+        confirmButton = {
+            Row {
+                story.profileUrl?.let { url -> TextButton(onClick = { uriHandler.openUri(url) }) { Text("OPEN PROFILE") } }
+                TextButton(onClick = onDismiss) { Text("CLOSE") }
+            }
+        }
     )
 }
 
