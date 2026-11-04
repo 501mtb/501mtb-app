@@ -282,14 +282,12 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("501MTB", style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
-                Text("MADAGASCAR • MOUNTAIN BIKING",
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(dataSourceLabel, style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
-            }
+            AsyncImage(
+                model = "https://501mtb.github.io/assets/images/logo/logoh.png",
+                contentDescription = "501MTB",
+                modifier = Modifier.height(42.dp).width(156.dp),
+                contentScale = ContentScale.Fit
+            )
             TextButton(onClick = { demoAdmin = !demoAdmin }) {
                 Text(if (demoAdmin) "EXIT ADMIN DEMO" else "ADMIN DEMO")
             }
