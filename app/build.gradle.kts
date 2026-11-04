@@ -45,5 +45,8 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20250517")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
