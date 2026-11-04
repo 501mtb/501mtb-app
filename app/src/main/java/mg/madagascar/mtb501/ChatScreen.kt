@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Send
@@ -54,7 +53,7 @@ fun ChatScreen() {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             IconButton(onClick = { notificationsOpen = !notificationsOpen }) {
-                BadgedBox(badge = { Badge { Text("0") } }) {
+                BadgedBox(badge = { Badge() }) {
                     Icon(
                         Icons.Default.Notifications,
                         contentDescription = "Notifications",
