@@ -15,6 +15,44 @@ data class OfficialMember(
     val active: Boolean = true
 )
 
+/** Parse and validate the bundled official register before any Firestore operation. */
+internal fun parseOfficialRegister(text: String): List<OfficialMember> {
+    val root = JSONObject(text)
+    require(root.optString("registry") == "501MTB" && root.optString("status") == "official") {
+        "The bundled register is not the official 501MTB register."
+    }
+    val array = root.getJSONArray("members")
+    require(array.length() == 55) { "The official register must contain 55 members." }
+    val parsed = (0 until array.length()).map { i ->
+        val item = array.getJSONObject(i)
+        val id = item.getString("memberId")
+        val gender = item.getString("gender")
+        val name = item.getString("name").trim()
+        val category = item.getString("category").trim()
+        require(id.matches(Regex("[MW]-\\d{3}")) && id[0].toString() == gender) {
+            "Invalid official member ID or gender: $id."
+        }
+        require(name.isNotBlank() && category.isNotBlank()) {
+            "Official member name and category are required."
+        }
+        OfficialMember(id, name, gender, category)
+    }
+    val numbers = parsed.map { it.memberId.substring(2).toInt() }
+    require(parsed.map { it.memberId }.toSet().size == 55) { "Duplicate official member IDs." }
+    require(numbers.toSet().size == 55 && numbers.sorted() == (1..55).toList()) {
+        "Official member IDs must use the complete sequence 001 to 055."
+    }
+    return parsed
+}
+
+/** M and W members share one global sequence. */
+internal fun nextOfficialMemberId(gender: String, lastIssued: Long): String {
+    require(gender == "M" || gender == "W") { "Gender must be M or W." }
+    val next = lastIssued + 1L
+    require(next in 1L..999L) { "The official member sequence is exhausted." }
+    return "$gender-${next.toString().padStart(3, '0')}"
+}
+
 /** Official register. Member document IDs are immutable; M/W share one global sequence. */
 class OfficialMemberRegistry(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
@@ -39,20 +77,7 @@ class OfficialMemberRegistry(
     suspend fun initializeOfficialRegister(context: Context): Int {
         checkAdmin()
         val text = context.assets.open("501mtb_member_registry.json").bufferedReader().use { it.readText() }
-        val root = JSONObject(text)
-        require(root.optString("registry") == "501MTB" && root.optString("status") == "official")
-        val array = root.getJSONArray("members")
-        require(array.length() == 55) { "The official register must contain 55 members." }
-        val parsed = (0 until array.length()).map { i ->
-            val item = array.getJSONObject(i)
-            val id = item.getString("memberId")
-            val gender = item.getString("gender")
-            require(id.matches(Regex("[MW]-\\d{3}")) && id[0].toString() == gender)
-            OfficialMember(id, item.getString("name"), gender, item.getString("category"))
-        }
-        val numbers = parsed.map { it.memberId.substring(2).toInt() }
-        require(parsed.map { it.memberId }.toSet().size == 55)
-        require(numbers.toSet().size == 55 && numbers.sorted() == (1..55).toList())
+        val parsed = parseOfficialRegister(text)
 
         return db.runTransaction { tx ->
             val existing = parsed.map { tx.get(members.document(it.memberId)) }
@@ -87,11 +112,11 @@ class OfficialMemberRegistry(
         return db.runTransaction { tx ->
             val counter = tx.get(sequence)
             require(counter.exists()) { "Initialize the official register before adding members." }
-            val next = (counter.getLong("lastIssued") ?: 55L) + 1L
-            require(next <= 999L)
-            val id = "$gender-${next.toString().padStart(3, '0')}"
+            val lastIssued = counter.getLong("lastIssued") ?: 55L
+            val id = nextOfficialMemberId(gender, lastIssued)
             val ref = members.document(id)
             require(!tx.get(ref).exists()) { "Generated ID already exists." }
+            val next = id.substring(2).toLong()
             tx.set(ref, mapOf(
                 "memberId" to id, "name" to name.trim(), "gender" to gender,
                 "category" to category.trim(), "badge" to category.trim(),
