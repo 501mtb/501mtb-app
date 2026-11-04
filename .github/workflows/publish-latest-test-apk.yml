@@ -1,0 +1,93 @@
+name: Publish latest signed Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-latest-test-apk
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_VERSION_CODE: ${{ 100000 + github.run_number }}
+      ANDROID_VERSION_NAME: 0.1.${{ github.run_number }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Check signing secrets
+        id: signing
+        shell: bash
+        run: |
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::APK publication skipped: configure all four Android signing secrets in repository settings."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up JDK 17
+        if: steps.signing.outputs.enabled == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        if: steps.signing.outputs.enabled == 'true'
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+
+      - name: Set up Android SDK
+        if: steps.signing.outputs.enabled == 'true'
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android platform
+        if: steps.signing.outputs.enabled == 'true'
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Prepare persistent signing key
+        if: steps.signing.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/501mtb-signing"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/501mtb-signing/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/501mtb-signing/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        if: steps.signing.outputs.enabled == 'true'
+        run: gradle assembleRelease
+
+      - name: Publish APK to stable latest-test download
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          if gh release view latest-test >/dev/null 2>&1; then
+            gh release upload latest-test "$APK#501MTB.apk" --clobber
+          else
+            gh release create latest-test "$APK#501MTB.apk" \
+              --prerelease \
+              --title "501MTB App — Latest signed test build" \
+              --notes "Latest automatically published signed Android test build."
+          fi
+
+      - name: Report skipped publication
+        if: steps.signing.outputs.enabled != 'true'
+        run: echo "No APK was published. Add the Android signing secrets, then run this workflow again."

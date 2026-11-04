@@ -8,12 +8,34 @@ android {
     namespace = "mg.madagascar.mtb501"
     compileSdk = 36
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+            val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            val keyAliasValue = System.getenv("ANDROID_KEY_ALIAS")
+            val keyPasswordValue = System.getenv("ANDROID_KEY_PASSWORD")
+
+            if (!keystorePath.isNullOrBlank()) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "mg.madagascar.mtb501"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = System.getenv("ANDROID_VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = System.getenv("ANDROID_VERSION_NAME") ?: "0.1.0"
+    }
+
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+        }
     }
 
     buildFeatures {
