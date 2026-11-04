@@ -47,6 +47,15 @@ jobs:
         with:
           gradle-version: "9.6.0"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install local Firebase emulator dependencies
+        working-directory: tests/firestore-rules
+        run: npm install --no-audit --no-fund
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
@@ -60,6 +69,35 @@ jobs:
 
       - name: Build debug APK
         run: gradle assembleDebug
+
+      - name: Run Android SDK integration tests against local Firebase emulators
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: |
+            cd tests/firestore-rules
+            npx firebase emulators:start --config ../../firebase.json --only auth,firestore --project demo-501mtb > "$RUNNER_TEMP/501mtb-firebase-emulators.log" 2>&1 &
+            EMULATOR_PID=$!
+            for attempt in $(seq 1 60); do
+              if nc -z 127.0.0.1 8080 && nc -z 127.0.0.1 9099; then
+                break
+              fi
+              sleep 2
+            done
+            if ! nc -z 127.0.0.1 8080 || ! nc -z 127.0.0.1 9099; then
+              cat "$RUNNER_TEMP/501mtb-firebase-emulators.log"
+              kill "$EMULATOR_PID" || true
+              exit 1
+            fi
+            node seed-android-integration-admin.mjs
+            cd ../..
+            gradle connectedDebugAndroidTest
+            TEST_EXIT=$?
+            kill "$EMULATOR_PID" || true
+            exit "$TEST_EXIT"
 
       - name: Print Android signing fingerprints
         run: gradle signingReport
