@@ -2,6 +2,8 @@ package mg.madagascar.mtb501
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -394,7 +396,7 @@ private fun NextRideCard(
                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clickable(onClick = onOpen), 0)
+            PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clickable(onClick = onOpen), 0, ridePhotoUrl(ride))
             RideActions(isFired, onFire, onComment, onShare, onOpen)
         }
     }
@@ -418,7 +420,7 @@ private fun PastEventCard(
     ) {
         Column {
             Box {
-                PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clickable(onClick = onOpen), 1)
+                PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clickable(onClick = onOpen), 1, ridePhotoUrl(ride))
                 if (admin) {
                     Box(Modifier.align(Alignment.TopEnd).padding(5.dp)) {
                         AdminMenuButton(onAction = onAdmin)
@@ -546,7 +548,7 @@ private fun AdminMenuButton(onAction: (String) -> Unit) {
 }
 
 @Composable
-private fun PhotoArtwork(title: String, modifier: Modifier = Modifier, variant: Int) {
+private fun PhotoArtwork(title: String, modifier: Modifier = Modifier, variant: Int, imageUrl: String? = null) {
     val colors = when (variant % 3) {
         0 -> listOf(Color(0xFF102A20), Color(0xFF527A42), Color(0xFF17251C))
         1 -> listOf(Color(0xFF172C38), Color(0xFF66816B), Color(0xFF18231F))
@@ -556,12 +558,44 @@ private fun PhotoArtwork(title: String, modifier: Modifier = Modifier, variant: 
         modifier = modifier.background(Brush.linearGradient(colors)),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text("501", color = Color.White.copy(alpha = .92f), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black)
-            Text("MTB  •  MADAGASCAR", color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-            Text(title, color = Color.White.copy(alpha = .85f), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .12f)))
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("501", color = Color.White.copy(alpha = .92f), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black)
+                Text("MTB  •  MADAGASCAR", color = Color.White, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text(title, color = Color.White.copy(alpha = .85f), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            }
         }
     }
+}
+
+private fun ridePhotoUrl(ride: ShowcaseRide): String {
+    val file = when (ride.id) {
+        1 -> "home/home-photo-001.jpg"
+        2 -> "home/home-photo-002.jpg"
+        3 -> "home/home-photo-003.jpg"
+        11 -> "event/completed/event-016.jpg"
+        13 -> "event/completed/event-017.jpg"
+        12 -> "event/completed/event-018.jpg"
+        else -> "event/event-001.jpg"
+    }
+    return "https://raw.githubusercontent.com/501mtb/501mtb.github.io/main/assets/images/$file"
+}
+
+private fun galleryPhotoUrl(index: Int): String {
+    val file = when (index % 3) {
+        0 -> "event/event-001.jpg"
+        1 -> "event/event-002.jpg"
+        else -> "event/event-003.jpg"
+    }
+    return "https://raw.githubusercontent.com/501mtb/501mtb.github.io/main/assets/images/$file"
 }
 
 @Composable
@@ -581,7 +615,7 @@ private fun RideShowcaseDialog(
                 modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
-                PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)), if (ride.completed) 1 else 0)
+                PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)), if (ride.completed) 1 else 0, ridePhotoUrl(ride))
                 Text(ride.date, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 Text("${ride.distance}  •  ${ride.level}")
                 Text("TIME: ${ride.time}")
@@ -590,7 +624,7 @@ private fun RideShowcaseDialog(
                 Text("PHOTO GALLERY", fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     repeat(3) { index ->
-                        PhotoArtwork("PHOTO ${index + 1}", Modifier.weight(1f).aspectRatio(1f), index)
+                        PhotoArtwork("PHOTO ${index + 1}", Modifier.weight(1f).aspectRatio(1f), index, galleryPhotoUrl(index))
                     }
                 }
                 Text("501MTB reactions and comments are shown here in the finished app.")
