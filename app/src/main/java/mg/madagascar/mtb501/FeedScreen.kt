@@ -52,7 +52,7 @@ data class FeedPost(
 )
 
 @Composable
-fun FeedScreen() {
+fun FeedScreen(onOpenPhotoLibrary: () -> Unit = {}) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val db = remember { FirebaseFirestore.getInstance() }
@@ -136,6 +136,9 @@ fun FeedScreen() {
 
         Text("COMMUNITY FEED", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
         Text("Photos, ride moments and 501MTB events shared by the community.", style = MaterialTheme.typography.bodyMedium)
+        Button(onClick = onOpenPhotoLibrary, modifier = Modifier.fillMaxWidth()) {
+            Text("OPEN SHARED PHOTO LIBRARY")
+        }
 
         if (canPost) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
