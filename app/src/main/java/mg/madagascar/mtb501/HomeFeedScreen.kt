@@ -105,9 +105,17 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             ShowcaseStory(23, "JOE", "SUPER", "Coastal Ride", "28 km", "08 OCT 2026"),
             ShowcaseStory(24, "MIKA", "SUPER", "Sunday Ride", "31 km", "05 OCT 2026"),
             ShowcaseStory(25, "SYLVANO", "ELITE", "XC Training", "46 km", "02 OCT 2026"),
-            ShowcaseStory(26, "YAKI", "SUPER", "Ivoloina Trail", "34 km", "28 SEP 2026")
+            ShowcaseStory(26, "YAKI", "SUPER", "Ivoloina Trail", "34 km", "28 SEP 2026"),
+            ShowcaseStory(27, "JAURES", "ROOKIE", "First Forest Ride", "18 km", "24 SEP 2026"),
+            ShowcaseStory(28, "JOEL", "ROOKIE", "Coastal Discovery", "22 km", "22 SEP 2026"),
+            ShowcaseStory(29, "KEN", "ROOKIE", "Sunday Trail", "16 km", "20 SEP 2026"),
+            ShowcaseStory(30, "HERVER", "ROOKIE", "Ivoloina Loop", "20 km", "18 SEP 2026"),
+            ShowcaseStory(31, "MANDRESY", "ROOKIE", "Forest Challenge", "24 km", "16 SEP 2026"),
+            ShowcaseStory(32, "YAINA", "ELITE", "XC Training", "42 km", "14 SEP 2026")
         ).apply { shuffle() }
     }
+    var storyPage by remember { mutableStateOf(0) }
+    var visibleStoryCount by remember { mutableStateOf(6) }
 
     var demoAdmin by remember { mutableStateOf(false) }
     var selectedRide by remember { mutableStateOf<ShowcaseRide?>(null) }
@@ -200,7 +208,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                 contentPadding = PaddingValues(horizontal = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(stories.take(8), key = { it.id }) { story ->
+                items(stories.drop(storyPage * 8).take(visibleStoryCount), key = { it.id }) { story ->
                     CommunityStoryCard(
                         story = story,
                         admin = demoAdmin,
@@ -211,6 +219,26 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                         onProfile = { profileStory = story },
                         onAdmin = { adminMessage = "$it: ${story.name}" }
                     )
+                }
+            }
+            if (stories.size > 6) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = {
+                        if (visibleStoryCount < 8 && storyPage * 8 + visibleStoryCount < stories.size) {
+                            visibleStoryCount = (visibleStoryCount + 2).coerceAtMost(8)
+                        } else if ((storyPage + 1) * 8 < stories.size) {
+                            storyPage += 1
+                            visibleStoryCount = 6
+                        }
+                    }) {
+                        Text(
+                            if (visibleStoryCount < 8 && storyPage * 8 + visibleStoryCount < stories.size)
+                                "LOAD MORE STORIES" else "NEXT STORIES  →"
+                        )
+                    }
                 }
             }
         }
