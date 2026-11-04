@@ -1,4 +1,4 @@
-name: Android debug build
+name: Android build and latest test APK
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -31,7 +31,6 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          # Avoid the obsolete "tools" package requested by the action's default.
           packages: platform-tools
 
       - name: Install Android platform
@@ -40,12 +39,27 @@ jobs:
       - name: Build debug APK
         run: gradle assembleDebug
 
-      - name: Print Android signing fingerprints
-        run: gradle signingReport
-
-      - name: Upload debug APK
+      - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: 501mtb-app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish latest test APK for the website
+        if: github.ref == 'refs/heads/feature/shared-photo-library' && github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-test
+          target_commitish: ${{ github.sha }}
+          name: 501MTB App — Latest test build
+          body: |
+            Latest automatically generated test APK from feature/shared-photo-library.
+
+            This is a development build, not a production release.
+          prerelease: true
+          make_latest: false
+          files: app/build/outputs/apk/debug/app-debug.apk
+          overwrite_files: true
+          fail_on_unmatched_files: true
