@@ -218,11 +218,29 @@ class ClubRepository(
                 "reviewedBy" to adminUid,
                 "reviewedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
             )
-            if (approve && !memberId.isNullOrBlank()) {
+            if (approve) {
+                require(!memberId.isNullOrBlank()) {
+                    "Select an existing official member ID before approving this account."
+                }
+                require(userSnapshot.getString("memberId").isNullOrBlank()) {
+                    "This account is already linked to a member."
+                }
                 val memberRef = db.collection("members").document(memberId)
-                val memberSnapshot = transaction.get(memberRef)
-                require(memberSnapshot.exists()) { "The selected legacy member does not exist." }
                 val linkRef = db.collection("memberLinks").document(memberId)
+
+                // Read every document before writing: Firestore transactions require this order.
+                val memberSnapshot = transaction.get(memberRef)
+                val linkSnapshot = transaction.get(linkRef)
+                require(memberSnapshot.exists()) {
+                    "The selected official member ID does not exist."
+                }
+                require(memberSnapshot.getBoolean("active") != false) {
+                    "This official member is inactive and cannot be linked."
+                }
+                require(!linkSnapshot.exists()) {
+                    "This official member is already linked to another Google account."
+                }
+
                 transaction.set(linkRef, mapOf(
                     "memberId" to memberId,
                     "userUid" to uid,
