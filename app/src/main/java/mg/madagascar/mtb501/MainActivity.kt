@@ -179,7 +179,8 @@ private fun ClubApp() {
             startDestination = "feed",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("feed") { FeedScreen() }
+            composable("feed") { FeedScreen(onOpenPhotoLibrary = { navController.navigate("photos") }) }
+            composable("photos") { SharedPhotoLibraryScreen() }
             composable("home") { HomeScreen() }
             composable("record") { RecordRideScreen() }
             composable("chat") { ChatScreen() }
