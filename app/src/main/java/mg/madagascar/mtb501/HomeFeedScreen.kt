@@ -154,6 +154,95 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             ShowcaseStory(32, "YAINA", "ELITE", "XC Training", "42 km", "14 SEP 2026")
         ).apply { shuffle() }
     }
+    var dataSourceLabel by remember { mutableStateOf("SHOWCASE FALLBACK • V2 DATA EXPORT PENDING") }
+    LaunchedEffect(Unit) {
+        val jsonText = withContext(Dispatchers.IO) {
+            runCatching {
+                val connection = URL("https://raw.githubusercontent.com/501mtb/501mtb.github.io/main/data/app-data.json").openConnection() as HttpURLConnection
+                connection.connectTimeout = 8000
+                connection.readTimeout = 8000
+                try {
+                    if (connection.responseCode !in 200..299) error("V2 data export not published")
+                    connection.inputStream.bufferedReader().use { it.readText() }
+                } finally { connection.disconnect() }
+            }.getOrNull()
+        }
+        if (jsonText != null) {
+            runCatching {
+                val sheets = JSONObject(jsonText).optJSONObject("sheets") ?: JSONObject()
+                val eventRows = sheets.optJSONArray("Events") ?: JSONArray()
+                val events = (0 until eventRows.length()).mapNotNull { index ->
+                    val row = eventRows.optJSONObject(index) ?: return@mapNotNull null
+                    val status = row.v2Text("status").lowercase()
+                    if (status !in listOf("planned", "open", "completed")) return@mapNotNull null
+                    val title = row.v2Text("title_en", "title_fr", "title_mg", "title")
+                    if (title.isBlank()) return@mapNotNull null
+                    val distanceRaw = row.v2Text("distance_km", "distance", "km")
+                    ShowcaseRide(
+                        id = row.v2Text("id").ifBlank { status + "-" + index }.hashCode(),
+                        date = showcaseDate(row.v2Text("date_start", "date")),
+                        title = title.uppercase(),
+                        level = row.v2Text("level", "difficulty", "category").ifBlank { "ALL LEVELS" }.uppercase(),
+                        time = row.v2Text("time_start", "time", "start_time").ifBlank { "TBA" },
+                        meeting = row.v2Text("location_en", "location_fr", "location_mg", "location", "meeting_point").ifBlank { "Toamasina" },
+                        distance = if (distanceRaw.isBlank()) "—" else if (distanceRaw.contains("km", true)) distanceRaw else distanceRaw + " km",
+                        completed = status == "completed",
+                        photoUrl = v2AssetUrl(row.v2Text("image", "photo")),
+                        externalUrl = row.v2Text("url", "facebook_url", "link").ifBlank { null }
+                    )
+                }
+                val upcoming = events.filter { !it.completed }.sortedBy { it.date }
+                val past = events.filter { it.completed }.sortedByDescending { it.date }
+                if (upcoming.isNotEmpty()) { nextRides.clear(); nextRides.addAll(upcoming) }
+                if (past.isNotEmpty()) { pastEvents.clear(); pastEvents.addAll(past) }
+                val riderRows = sheets.optJSONArray("Riders") ?: JSONArray()
+                val riders = (0 until riderRows.length()).mapNotNull { index ->
+                    val row = riderRows.optJSONObject(index) ?: return@mapNotNull null
+                    if (row.has("published") && row.v2Text("published").lowercase() != "yes") return@mapNotNull null
+                    if (row.v2Text("name").isBlank()) return@mapNotNull null
+                    row
+                }
+                val registryNames = listOf("MemberRides", "Member Rides", "Member_Rides", "RideLog", "Ride Log", "RideRegistry", "Ride Registry")
+                val registry = registryNames.firstNotNullOfOrNull { sheets.optJSONArray(it) }
+                val memberStories = mutableListOf<ShowcaseStory>()
+                if (registry != null) {
+                    for (index in 0 until registry.length()) {
+                        val row = registry.optJSONObject(index) ?: continue
+                        val name = row.v2Text("rider_name", "member_name", "rider", "member", "name")
+                        if (name.isBlank()) continue
+                        val distanceRaw = row.v2Text("distance_km", "distance", "km")
+                        val member = riders.firstOrNull { it.v2Text("name").equals(name, true) }
+                        memberStories += ShowcaseStory(
+                            id = row.v2Text("id").ifBlank { "member-ride-" + index }.hashCode(),
+                            name = name.uppercase(),
+                            badge = member?.v2Text("category", "badge", "status")?.uppercase().orEmpty().ifBlank { "RIDER" },
+                            ride = row.v2Text("ride_title", "title", "ride_name", "event").ifBlank { "MEMBER RIDE" },
+                            distance = if (distanceRaw.isBlank()) "—" else if (distanceRaw.contains("km", true)) distanceRaw else distanceRaw + " km",
+                            date = showcaseDate(row.v2Text("date", "ride_date", "date_start")),
+                            photoUrl = v2AssetUrl(member?.v2Text("photo").orEmpty()),
+                            gpsUrl = row.v2Text("gps_url", "gpx_url", "track_url").ifBlank { null },
+                            profileUrl = member?.v2Text("profile_url")?.ifBlank { null }
+                        )
+                    }
+                }
+                if (memberStories.isEmpty()) {
+                    riders.forEachIndexed { index, row ->
+                        memberStories += ShowcaseStory(
+                            id = row.v2Text("id").ifBlank { "rider-" + index }.hashCode(),
+                            name = row.v2Text("name").uppercase(),
+                            badge = row.v2Text("category", "badge", "status").uppercase().ifBlank { "RIDER" },
+                            ride = "MEMBER RIDE", distance = "—", date = "501MTB RIDER",
+                            photoUrl = v2AssetUrl(row.v2Text("photo")),
+                            profileUrl = row.v2Text("profile_url").ifBlank { null }
+                        )
+                    }
+                }
+                if (memberStories.isNotEmpty()) { stories.clear(); stories.addAll(memberStories.shuffled()) }
+                dataSourceLabel = "LIVE DATA • 501MTB V2 WORKBOOK"
+            }.onFailure { dataSourceLabel = "SHOWCASE FALLBACK • V2 DATA FORMAT CHECK" }
+        }
+    }
+
     var storyPage by remember { mutableStateOf(0) }
     var visibleStoryCount by remember { mutableStateOf(6) }
 
@@ -182,6 +271,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                     color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
                 Text("MADAGASCAR • MOUNTAIN BIKING",
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(dataSourceLabel, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
             }
             TextButton(onClick = { demoAdmin = !demoAdmin }) {
                 Text(if (demoAdmin) "EXIT ADMIN DEMO" else "ADMIN DEMO")
