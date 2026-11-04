@@ -77,16 +77,17 @@ jobs:
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
-          apksigner verify --verbose "$APK"
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$APKSIGNER" verify --verbose "$APK"
 
           mkdir -p "$RUNNER_TEMP/501mtb-previous"
           gh release download latest-test --pattern "501MTB.apk" --dir "$RUNNER_TEMP/501mtb-previous"
           OLD_APK="$RUNNER_TEMP/501mtb-previous/501MTB.apk"
           test -s "$OLD_APK"
-          apksigner verify --verbose "$OLD_APK"
+          "$APKSIGNER" verify --verbose "$OLD_APK"
 
           cert_digest() {
-            apksigner verify --print-certs "$1" |
+            "$APKSIGNER" verify --print-certs "$1" |
               awk -F': ' '/Signer #1 certificate SHA-256 digest:/ {print tolower($2); exit}'
           }
 
