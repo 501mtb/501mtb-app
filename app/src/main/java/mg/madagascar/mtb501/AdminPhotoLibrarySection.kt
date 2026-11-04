@@ -33,7 +33,7 @@ private val photoTargets = listOf(
     "501mtb.pdc" to "PDC · 16:9 slideshow",
     "rides" to "Rides · 16:9",
     "events" to "Events · 16:9",
-    "riders" to "Riders · 3:4",
+    "riders" to "Riders · 9:16",
     "leaders" to "Leaders · 3:4",
     "gallery" to "Gallery · 16:9"
 )
@@ -70,7 +70,8 @@ fun AdminPhotoLibrarySection(
     val currentLibrary = library
     val currentSlot = currentLibrary?.slots?.get(selectedTarget)
     val requiredRatio = currentSlot?.requiredRatio ?: when (selectedTarget) {
-        "riders", "leaders" -> "3:4"
+        "riders" -> "9:16"
+        "leaders" -> "3:4"
         "501mtb.pdp" -> "1:1"
         else -> "16:9"
     }
@@ -185,6 +186,7 @@ fun AdminPhotoLibrarySection(
                                             modifier = Modifier.fillMaxWidth().aspectRatio(
                                                 when (photo.ratio) {
                                                     "3:4" -> 3f / 4f
+                                                    "9:16" -> 9f / 16f
                                                     "1:1" -> 1f
                                                     else -> 16f / 9f
                                                 }

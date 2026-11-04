@@ -58,6 +58,7 @@ data class PhotoLibrary(
         val expected = when (image.ratio) {
             "16:9" -> 16.0 / 9.0
             "3:4" -> 3.0 / 4.0
+            "9:16" -> 9.0 / 16.0
             "1:1" -> 1.0
             else -> return false
         }
@@ -156,6 +157,7 @@ class PhotoLibraryRepository(
         return when {
             kotlin.math.abs(ratio - 16.0 / 9.0) <= 0.01 -> "16:9"
             kotlin.math.abs(ratio - 3.0 / 4.0) <= 0.01 -> "3:4"
+            kotlin.math.abs(ratio - 9.0 / 16.0) <= 0.01 -> "9:16"
             kotlin.math.abs(ratio - 1.0) <= 0.01 -> "1:1"
             else -> null
         }

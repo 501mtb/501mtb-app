@@ -125,6 +125,7 @@ fun SharedPhotoLibraryScreen() {
                                 modifier = Modifier.fillMaxWidth().aspectRatio(
                                     when (photo.ratio) {
                                         "3:4" -> 3f / 4f
+                                        "9:16" -> 9f / 16f
                                         "1:1" -> 1f
                                         else -> 16f / 9f
                                     }
