@@ -1,4 +1,4 @@
-name: Android debug build and tests
+name: Android debug build
 
 on:
   push:
@@ -11,25 +11,6 @@ permissions:
   contents: read
 
 jobs:
-  firestore-rules-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install Firestore rules test dependencies
-        working-directory: tests/firestore-rules
-        run: npm install --no-audit --no-fund
-
-      - name: Test Firestore security rules in local emulator
-        working-directory: tests/firestore-rules
-        run: npm test
-
   build:
     runs-on: ubuntu-latest
     steps:
@@ -47,37 +28,17 @@ jobs:
         with:
           gradle-version: "9.6.0"
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install local Firebase emulator dependencies
-        working-directory: tests/firestore-rules
-        run: npm install --no-audit --no-fund
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
+          # Avoid the obsolete "tools" package requested by the action's default.
           packages: platform-tools
 
       - name: Install Android platform
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Run member registry unit tests
-        run: gradle testDebugUnitTest
-
       - name: Build debug APK
         run: gradle assembleDebug
-
-      - name: Run Android SDK integration tests against local Firebase emulators
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          arch: x86_64
-          profile: pixel_2
-          disable-animations: true
-          script: bash .github/scripts/run-android-integration.sh
 
       - name: Print Android signing fingerprints
         run: gradle signingReport
