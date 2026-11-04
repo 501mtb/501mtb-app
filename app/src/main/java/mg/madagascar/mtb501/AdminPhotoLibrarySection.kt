@@ -54,10 +54,9 @@ fun AdminPhotoLibrarySection(
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedTarget by remember { mutableStateOf(photoTargets.first().first) }
-    var targetMenuExpanded by remember { mutableStateOf(false) }
     var selectedPhotos by remember { mutableStateOf<List<PhotoLibraryImage>>(emptyList()) }
     var photoFieldsVisible by remember { mutableStateOf(false) }
-    var optionsMenuExpanded by remember { mutableStateOf(false) }
+    var openTargetMenu by remember { mutableStateOf<String?>(null) }
 
     suspend fun reload() {
         loading = true
@@ -113,65 +112,52 @@ fun AdminPhotoLibrarySection(
             modifier = Modifier.fillMaxWidth().padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { optionsMenuExpanded = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Photo library options")
-                }
-                DropdownMenu(
-                    expanded = optionsMenuExpanded,
-                    onDismissRequest = { optionsMenuExpanded = false }
+            Text(
+                "Shared photo library",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                "Photo files stay on GitHub Pages. Firestore stores only selected photo references.",
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Text("Photo fields", style = MaterialTheme.typography.titleSmall)
+            photoTargets.forEach { (targetId, targetLabel) ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    DropdownMenuItem(
-                        text = { Text(if (photoFieldsVisible) "Hide photo fields" else "Show photo fields") },
-                        onClick = {
-                            photoFieldsVisible = !photoFieldsVisible
-                            optionsMenuExpanded = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Refresh photo library") },
-                        onClick = {
-                            optionsMenuExpanded = false
-                            scope.launch { reload() }
-                        }
-                    )
-                }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        "Shared photo library",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        targetLabel,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium
                     )
-                    Text(
-                        "Photo files stay on GitHub Pages. Firestore stores only selected photo references.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    androidx.compose.foundation.layout.Box {
+                        IconButton(onClick = { openTargetMenu = targetId }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Options for $targetLabel")
+                        }
+                        DropdownMenu(
+                            expanded = openTargetMenu == targetId,
+                            onDismissRequest = { openTargetMenu = null }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Change photo") },
+                                onClick = {
+                                    selectedTarget = targetId
+                                    selectedPhotos = emptyList()
+                                    photoFieldsVisible = true
+                                    openTargetMenu = null
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
             if (photoFieldsVisible) {
-            OutlinedButton(onClick = { targetMenuExpanded = true }) {
-                Text("Target: ${photoTargets.firstOrNull { it.first == selectedTarget }?.second ?: selectedTarget}")
-            }
-            DropdownMenu(
-                expanded = targetMenuExpanded,
-                onDismissRequest = { targetMenuExpanded = false }
-            ) {
-                photoTargets.forEach { (id, label) ->
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = {
-                            selectedTarget = id
-                            selectedPhotos = emptyList()
-                            targetMenuExpanded = false
-                        }
-                    )
-                }
-            }
-
+            if (photoFieldsVisible) {
             Text("Required ratio: $requiredRatio", style = MaterialTheme.typography.labelLarge)
             if (isSlideshow) {
                 Text("PDC slideshow: tap several photos to select them. Their order follows your selection.", style = MaterialTheme.typography.bodySmall)
