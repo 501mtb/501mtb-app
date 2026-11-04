@@ -19,10 +19,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsBike
-import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.DynamicFeed
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -88,9 +88,9 @@ private data class AppTab(
 private val appTabs = listOf(
     AppTab("feed", "Feed", Icons.Default.DynamicFeed),
     AppTab("home", "501 Profile", Icons.Default.Groups),
-    AppTab("rides", "Rides", Icons.Default.DirectionsBike),
-    AppTab("events", "Events", Icons.Default.Event),
-    AppTab("riders", "Riders", Icons.Default.Groups)
+    AppTab("record", "Record Ride", Icons.Default.DirectionsBike),
+    AppTab("chat", "Chat", Icons.Default.ChatBubbleOutline),
+    AppTab("rider", "Rider", Icons.Default.Person)
 )
 
 @Composable
@@ -176,11 +176,14 @@ private fun ClubApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "home",
+            startDestination = "feed",
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("feed") { FeedScreen() }
             composable("home") { HomeScreen() }
+            composable("record") { RecordRideScreen() }
+            composable("chat") { PlaceholderScreen("Chat", "501MTB community messaging will be available here.") }
+            composable("rider") { RidersScreen() }
             composable("rides") { RidesScreen() }
             composable("events") { EventsScreen() }
             composable("riders") { RidersScreen() }
