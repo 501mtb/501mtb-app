@@ -339,34 +339,33 @@ private fun NextRideCard(
     onComment: () -> Unit,
     onShare: () -> Unit
 ) {
-    var menu by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.width(318.dp),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
-            Box {
-                PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clickable(onClick = onOpen), 0)
-                Row(
-                    modifier = Modifier.align(Alignment.TopStart).fillMaxWidth().padding(9.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 7.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (admin) AdminMenuButton(onAction = onAdmin)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    if (admin) AdminMenuButton(onAction = { onAdmin(it) })
-                    Column(
-                        modifier = Modifier.width(238.dp).clip(RoundedCornerShape(9.dp))
-                            .background(Color.Black.copy(alpha = .78f)).padding(9.dp),
-                        horizontalAlignment = Alignment.End,
-                        verticalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        Text(ride.date, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
-                        Text(ride.title, color = Color.White, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, maxLines = 2)
-                        Text("${ride.level}  •  ${ride.time}", color = Color.White, style = MaterialTheme.typography.labelSmall)
-                        Text("MEET: ${ride.meeting}", color = Color.White, style = MaterialTheme.typography.labelSmall)
-                    }
+                    Text(ride.date, color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
+                    Text(ride.title, style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text("${ride.level}  •  ${ride.time}",
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("MEET: ${ride.meeting}",
+                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clickable(onClick = onOpen), 0)
             RideActions(ride.id, isFired, onFire, onComment, onShare, onOpen)
         }
     }
