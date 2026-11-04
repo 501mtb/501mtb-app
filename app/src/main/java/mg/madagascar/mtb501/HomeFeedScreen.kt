@@ -28,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInNew
@@ -273,8 +274,8 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     val demoComments = remember { mutableStateMapOf<String, List<String>>() }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        modifier = Modifier.fillMaxSize().padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
@@ -513,7 +514,7 @@ private fun NextRideCard(
     onShare: () -> Unit
 ) {
     Card(
-        modifier = Modifier.width(318.dp),
+        modifier = Modifier.width(270.dp),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -556,7 +557,7 @@ private fun PastEventCard(
     onShare: () -> Unit
 ) {
     Card(
-        modifier = Modifier.width(258.dp),
+        modifier = Modifier.width(218.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -649,24 +650,27 @@ private fun RideActions(
     onOpen: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+        modifier = Modifier.fillMaxWidth().height(38.dp).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        TextButton(onClick = onFire) {
-            Icon(Icons.Default.Favorite, contentDescription = null,
-                tint = if (isFired) Color(0xFFFF4D4D) else MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(if (isFired) "FIRED" else "FIRE")
+        IconButton(onClick = onFire, modifier = Modifier.size(34.dp)) {
+            Icon(Icons.Default.Favorite, contentDescription = if (isFired) "Remove Fire reaction" else "Fire",
+                tint = if (isFired) Color(0xFFFF4D4D) else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(19.dp))
         }
-        TextButton(onClick = onComment) {
-            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null)
-            Text("COMMENT")
+        IconButton(onClick = onComment, modifier = Modifier.size(34.dp)) {
+            Icon(Icons.Default.ChatBubbleOutline, contentDescription = "Comments",
+                modifier = Modifier.size(19.dp))
         }
-        TextButton(onClick = onShare) {
-            Icon(Icons.Default.Share, contentDescription = null)
-            Text("SHARE")
+        IconButton(onClick = onShare, modifier = Modifier.size(34.dp)) {
+            Icon(Icons.Default.Share, contentDescription = "Share",
+                modifier = Modifier.size(19.dp))
         }
-        TextButton(onClick = onOpen) { Text("DETAILS") }
+        IconButton(onClick = onOpen, modifier = Modifier.size(34.dp)) {
+            Icon(Icons.Default.ArrowForward, contentDescription = "Ride details",
+                modifier = Modifier.size(19.dp))
+        }
     }
 }
 
