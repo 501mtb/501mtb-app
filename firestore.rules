@@ -163,6 +163,25 @@ service cloud.firestore {
         && (resource.data.authorUid == request.auth.uid || isAdmin());
     }
 
+    match /sharedPhotos/{photoId} {
+      allow read: if isApprovedMember() || isAdmin();
+      allow create: if signedIn()
+        && (isApprovedMember() || isAdmin())
+        && request.resource.data.keys().hasOnly([
+          "authorUid", "authorName", "caption", "imageUrl", "storagePath", "createdAt"
+        ])
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.authorName is string
+        && request.resource.data.caption is string
+        && request.resource.data.imageUrl is string
+        && request.resource.data.storagePath is string
+        && request.resource.data.storagePath.matches("sharedPhotos/" + request.auth.uid + "/[^/]+")
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if signedIn()
+        && (resource.data.authorUid == request.auth.uid || isAdmin());
+    }
+
     match /events/{eventId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
