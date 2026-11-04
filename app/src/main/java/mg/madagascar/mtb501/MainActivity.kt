@@ -182,7 +182,7 @@ private fun ClubApp() {
             composable("feed") { FeedScreen() }
             composable("home") { HomeScreen() }
             composable("record") { RecordRideScreen() }
-            composable("chat") { PlaceholderScreen("Chat", "501MTB community messaging will be available here.") }
+            composable("chat") { ChatScreen() }
             composable("rider") { RidersScreen() }
             composable("rides") { RidesScreen() }
             composable("events") { EventsScreen() }
