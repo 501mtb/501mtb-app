@@ -159,6 +159,7 @@ private fun ClubApp() {
         },
         bottomBar = {
             NavigationBar(
+                modifier = Modifier.height(64.dp),
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
                 appTabs.forEach { tab ->
