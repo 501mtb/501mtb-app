@@ -2,7 +2,6 @@ package mg.madagascar.mtb501
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,10 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -29,7 +28,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -86,9 +84,9 @@ private data class ShowcaseStory(
 fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     val nextRides = remember {
         mutableStateListOf(
-            ShowcaseRide(1, "01 NOV 2026", "LAC ANDOVOLALINA", "INTERMEDIATE", "08:00", "Before Barikadimy", "54 km", false),
-            ShowcaseRide(2, "15 NOV 2026", "IVOLOINA TRAIL RIDE", "ALL LEVELS", "07:30", "Loca Velo Tanamakoa", "32 km", false),
-            ShowcaseRide(3, "29 NOV 2026", "MAKUA FESTIVAL RIDE", "ALL LEVELS", "12:30", "Loca Velo Tanamakoa", "18 km", false)
+            ShowcaseRide(1, "15 NOV 2026", "IVOLOINA TRAIL RIDE", "ALL LEVELS", "07:30", "Loca Velo Tanamakoa", "32 km", false),
+            ShowcaseRide(2, "29 NOV 2026", "MAKUA FESTIVAL RIDE", "ALL LEVELS", "12:30", "Loca Velo Tanamakoa", "18 km", false),
+            ShowcaseRide(3, "13 DEC 2026", "LAC ANDOVOLALINA", "INTERMEDIATE", "08:00", "Before Barikadimy", "54 km", false)
         )
     }
     val pastEvents = remember {
@@ -187,7 +185,7 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                 contentPadding = PaddingValues(horizontal = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                items(pastEvents.sortedByDescending { it.id }, key = { it.id }) { ride ->
+                items(pastEvents, key = { it.id }) { ride ->
                     PastEventCard(
                         ride = ride,
                         admin = demoAdmin,
@@ -402,7 +400,7 @@ private fun NextRideCard(
                 }
             }
             PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clickable(onClick = onOpen), 0)
-            RideActions(ride.id, isFired, onFire, onComment, onShare, onOpen)
+            RideActions(isFired, onFire, onComment, onShare, onOpen)
         }
     }
 }
@@ -505,7 +503,6 @@ private fun CommunityStoryCard(
 
 @Composable
 private fun RideActions(
-    id: Int,
     isFired: Boolean,
     onFire: () -> Unit,
     onComment: () -> Unit,
@@ -585,7 +582,10 @@ private fun RideShowcaseDialog(
         onDismissRequest = onDismiss,
         title = { Text(ride.title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Column(
+                modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(9.dp)
+            ) {
                 PhotoArtwork(ride.title, Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)), if (ride.completed) 1 else 0)
                 Text(ride.date, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 Text("${ride.distance}  •  ${ride.level}")
@@ -626,7 +626,10 @@ private fun StoryDetailDialog(
         onDismissRequest = onDismiss,
         title = { Text("${story.name} • MEMBER RIDE") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Column(
+                modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(9.dp)
+            ) {
                 PhotoArtwork(story.ride, Modifier.fillMaxWidth().aspectRatio(4f / 3f).clip(RoundedCornerShape(12.dp)), 2)
                 Text(story.date, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 Text("${story.ride}  •  ${story.distance}")
