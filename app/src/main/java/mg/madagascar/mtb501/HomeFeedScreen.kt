@@ -139,7 +139,12 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     }
 
     selectedRide?.let { ride ->
-        RideDetailsDialog(ride = ride, onDismiss = { selectedRide = null })
+        val detailCover = if (ride.status == RideStatus.COMPLETED) eventCoverUrl else rideCoverUrl
+        RideDetailsDialog(
+            ride = ride,
+            coverUrl = detailCover,
+            onDismiss = { selectedRide = null }
+        )
     }
 }
 
@@ -311,17 +316,36 @@ private fun SectionLoadError(message: String) {
 }
 
 @Composable
-private fun RideDetailsDialog(ride: ClubRide, onDismiss: () -> Unit) {
+private fun RideDetailsDialog(
+    ride: ClubRide,
+    coverUrl: String?,
+    onDismiss: () -> Unit
+) {
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(ride.title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (!coverUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = coverUrl,
+                        contentDescription = ride.title,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
                 Text(ride.date, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 Text("${ride.distanceKm} km")
-                Text(ride.location)
-                Text(ride.type)
+                Text("Meeting point: ${ride.location}")
+                Text("Category: ${ride.type}")
+                Text(
+                    if (ride.status == RideStatus.COMPLETED) "PAST EVENT" else "UPCOMING RIDE",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         confirmButton = {
