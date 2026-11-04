@@ -266,7 +266,6 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
             story = story,
             isFired = fired[story.id] ?: false,
             onFire = { fired[story.id] = !(fired[story.id] ?: false) },
-            onComment = { commentsFor = story.ride },
             onGps = { gpsStory = story },
             onProfile = { profileStory = story },
             onDismiss = { selectedStory = null }
@@ -435,7 +434,7 @@ private fun PastEventCard(
                     Text("${ride.distance}  •  ${ride.date}", color = Color.White, style = MaterialTheme.typography.labelMedium)
                 }
             }
-            RideActions(ride.id, isFired, onFire, onComment, onShare, onOpen)
+            RideActions(isFired, onFire, onComment, onShare, onOpen)
         }
     }
 }
@@ -613,7 +612,6 @@ private fun StoryDetailDialog(
     story: ShowcaseStory,
     isFired: Boolean,
     onFire: () -> Unit,
-    onComment: () -> Unit,
     onGps: () -> Unit,
     onProfile: () -> Unit,
     onDismiss: () -> Unit
