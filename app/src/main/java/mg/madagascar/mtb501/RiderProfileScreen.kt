@@ -50,6 +50,7 @@ import com.google.firebase.auth.FirebaseAuth
 fun RiderProfileScreen() {
     val auth = remember { FirebaseAuth.getInstance() }
     var account by remember { mutableStateOf<ClubUser?>(null) }
+    var assignedBadge by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
     var settingsOpen by remember { mutableStateOf(false) }
     var clubSummary by remember { mutableStateOf<ClubSummary?>(null) }
@@ -60,6 +61,13 @@ fun RiderProfileScreen() {
         try {
             val repository = ClubRepository()
             account = repository.getMyAccount()
+            val currentName = account?.displayName?.trim().orEmpty()
+            assignedBadge = if (currentName.isNotBlank()) {
+                repository.getPublicMembers()
+                    .firstOrNull { it.name.trim().equals(currentName, ignoreCase = true) }
+                    ?.badge
+                    ?.takeIf { it.isNotBlank() }
+            } else null
             clubSummary = repository.getClubSummary()
             loadMessage = null
         } catch (error: Exception) {
@@ -149,7 +157,7 @@ fun RiderProfileScreen() {
             }
             Spacer(Modifier.height(8.dp))
             Text(riderName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(account?.badgeLabel() ?: "501MTB MEMBER", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text(assignedBadge ?: "BADGE NOT ASSIGNED", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             Text("501MTB ID: ${account?.memberId ?: "Not assigned"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (account?.approvalStatus == ApprovalStatus.PENDING) {
                 Text("Account pending approval", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
@@ -229,6 +237,3 @@ private fun ProfileStat(label: String, value: String) {
     }
 }
 
-private fun ClubUser.badgeLabel(): String = approvalStatus.name.let {
-    if (it == "APPROVED") "501MTB RIDER" else "MEMBER"
-}
