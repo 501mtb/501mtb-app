@@ -303,27 +303,13 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
         ShowcaseSectionHeader("NEXT RIDE", "UPCOMING MTB RIDES", demoAdmin) {
             adminMessage = "Add a new Next Ride"
         }
-        nextRides.firstOrNull()?.let { ride ->
-            NextRideCard(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
-                ride = ride,
-                admin = demoAdmin,
-                onOpen = { selectedRide = ride },
-                onAdmin = { action -> adminMessage = "$action: ${ride.title}" },
-                onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
-                isFired = fired[ride.id] ?: false,
-                onComment = { commentsFor = ride.title },
-                onShare = { shareMessage = "Share preview: ${ride.title}" }
-            )
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            ShowcaseSectionHeader("PAST EVENT", "MTB EVENT", demoAdmin) {
-                adminMessage = "Add a Past Event"
-            }
-            pastEvents.firstOrNull()?.let { ride ->
-                PastEventCard(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 18.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(nextRides, key = { it.id }) { ride ->
+                NextRideCard(
+                    modifier = Modifier.width(320.dp),
                     ride = ride,
                     admin = demoAdmin,
                     onOpen = { selectedRide = ride },
@@ -333,6 +319,30 @@ fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
                     onComment = { commentsFor = ride.title },
                     onShare = { shareMessage = "Share preview: ${ride.title}" }
                 )
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            ShowcaseSectionHeader("PAST EVENT", "MTB EVENT", demoAdmin) {
+                adminMessage = "Add a Past Event"
+            }
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 18.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(pastEvents, key = { it.id }) { ride ->
+                    PastEventCard(
+                        modifier = Modifier.width(320.dp),
+                        ride = ride,
+                        admin = demoAdmin,
+                        onOpen = { selectedRide = ride },
+                        onAdmin = { action -> adminMessage = "$action: ${ride.title}" },
+                        onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
+                        isFired = fired[ride.id] ?: false,
+                        onComment = { commentsFor = ride.title },
+                        onShare = { shareMessage = "Share preview: ${ride.title}" }
+                    )
+                }
             }
         }
 
@@ -519,14 +529,14 @@ private fun NextRideCard(
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            Row(
-                modifier = Modifier.align(Alignment.BottomEnd).padding(5.dp)
-                    .clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = .72f)),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.align(Alignment.TopEnd).padding(5.dp)
+                    .clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = .76f)),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 RideActionButtons(isFired, onFire, onComment, onShare, onOpen)
             }
-            if (admin) Box(Modifier.align(Alignment.TopEnd).padding(5.dp)) { AdminMenuButton(onAction = onAdmin) }
+            if (admin) Box(Modifier.align(Alignment.TopStart).padding(5.dp)) { AdminMenuButton(onAction = onAdmin) }
         }
     }
 }
@@ -585,17 +595,17 @@ private fun RideActionButtons(
     onShare: () -> Unit,
     onOpen: () -> Unit
 ) {
-    IconButton(onClick = onFire, modifier = Modifier.size(34.dp)) {
+    IconButton(onClick = onFire, modifier = Modifier.size(32.dp)) {
         Icon(Icons.Default.Favorite, contentDescription = if (isFired) "Remove Fire reaction" else "Fire",
             tint = if (isFired) Color(0xFFFF4D4D) else Color.White, modifier = Modifier.size(17.dp))
     }
-    IconButton(onClick = onComment, modifier = Modifier.size(34.dp)) {
+    IconButton(onClick = onComment, modifier = Modifier.size(32.dp)) {
         Icon(Icons.Default.ChatBubbleOutline, contentDescription = "Comments", tint = Color.White, modifier = Modifier.size(17.dp))
     }
-    IconButton(onClick = onShare, modifier = Modifier.size(34.dp)) {
+    IconButton(onClick = onShare, modifier = Modifier.size(32.dp)) {
         Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White, modifier = Modifier.size(17.dp))
     }
-    IconButton(onClick = onOpen, modifier = Modifier.size(34.dp)) {
+    IconButton(onClick = onOpen, modifier = Modifier.size(32.dp)) {
         Icon(Icons.Default.ArrowForward, contentDescription = "Ride details", tint = Color.White, modifier = Modifier.size(17.dp))
     }
 }
