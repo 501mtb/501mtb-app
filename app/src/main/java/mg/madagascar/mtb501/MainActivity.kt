@@ -87,7 +87,7 @@ private data class AppTab(
 
 private val appTabs = listOf(
     AppTab("feed", "Feed", Icons.Default.DynamicFeed),
-    AppTab("home", "Home", Icons.Default.Home),
+    AppTab("home", "501 Profile", Icons.Default.Groups),
     AppTab("rides", "Rides", Icons.Default.DirectionsBike),
     AppTab("events", "Events", Icons.Default.Event),
     AppTab("riders", "Riders", Icons.Default.Groups)
@@ -245,34 +245,60 @@ private fun HomeScreen() {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "501MTB",
-            style = MaterialTheme.typography.displayMedium,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Black
-        )
-        Text(
-            text = "WHERE LEGENDS RISE",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Discover Yourself, Broaden Your Horizon, Explore The World",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                androidx.compose.foundation.Image(
+                    painter = painterResource(id = R.drawable.mtb501_app_icon),
+                    contentDescription = "501MTB emblem",
+                    modifier = Modifier.size(112.dp)
+                )
+                Text(
+                    "501MTB",
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Black
+                )
+                Text(
+                    "MADAGASCAR • MOUNTAIN BIKING",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "WHERE LEGENDS RISE",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Discover Yourself, Broaden Your Horizon, Explore The World",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
 
-        InfoCard(
-            title = "Next Ride",
-            description = "Ride information and registration will be available here."
+        ProfileInfoCard(
+            title = "OUR VISION",
+            description = "To become the leading reference for mountain biking in Madagascar."
         )
-        InfoCard(
-            title = "501MTB Community",
-            description = "Discover the club, its riders and its activities in Madagascar."
+        ProfileInfoCard(
+            title = "OUR MISSION",
+            description = "To develop and promote mountain biking by organizing events, supporting riders, and building a strong and united MTB community."
+        )
+        ProfileInfoCard(
+            title = "OUR COMMUNITY",
+            description = "501MTB brings riders together through events, trail rides, race experiences and community support across Madagascar."
         )
 
         AccountCard(
@@ -336,6 +362,31 @@ private fun HomeScreen() {
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun ProfileInfoCard(title: String, description: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
