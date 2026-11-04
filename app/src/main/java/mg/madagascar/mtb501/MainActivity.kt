@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -137,15 +138,29 @@ private fun HomeScreen() {
     val scope = rememberCoroutineScope()
 
     var currentUser by remember { mutableStateOf(auth.currentUser) }
+    var memberId by remember { mutableStateOf<String?>(null) }
     var isSigningIn by remember { mutableStateOf(false) }
     var authMessage by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(auth) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             currentUser = firebaseAuth.currentUser
+            if (firebaseAuth.currentUser == null) memberId = null
         }
         auth.addAuthStateListener(listener)
         onDispose { auth.removeAuthStateListener(listener) }
+    }
+
+    LaunchedEffect(currentUser?.uid) {
+        if (currentUser != null) {
+            try {
+                val repository = ClubRepository()
+                repository.ensurePendingAccount()
+                memberId = repository.getMyAccount()?.memberId
+            } catch (error: Exception) {
+                authMessage = error.localizedMessage ?: "Your 501MTB ID could not be loaded."
+            }
+        }
     }
 
     Column(
@@ -185,6 +200,7 @@ private fun HomeScreen() {
         AccountCard(
             displayName = currentUser?.displayName,
             email = currentUser?.email,
+            memberId = memberId,
             isSigningIn = isSigningIn,
             message = authMessage,
             onSignIn = {
@@ -258,6 +274,7 @@ private fun HomeScreen() {
 private fun AccountCard(
     displayName: String?,
     email: String?,
+    memberId: String?,
     isSigningIn: Boolean,
     message: String?,
     onSignIn: () -> Unit,
@@ -308,6 +325,9 @@ private fun AccountCard(
                     fontWeight = FontWeight.Bold
                 )
                 Text(email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                memberId?.let {
+                    Text("501MTB ID: $it", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                }
                 Text(
                     "Your account is signed in. Member access may require administrator approval.",
                     style = MaterialTheme.typography.bodySmall,
