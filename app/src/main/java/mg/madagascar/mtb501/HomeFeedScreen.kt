@@ -44,6 +44,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +62,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 private data class ShowcaseRide(
     val id: Int,
@@ -70,7 +77,9 @@ private data class ShowcaseRide(
     val time: String,
     val meeting: String,
     val distance: String,
-    val completed: Boolean
+    val completed: Boolean,
+    val photoUrl: String? = null,
+    val externalUrl: String? = null
 )
 
 private data class ShowcaseStory(
@@ -79,7 +88,10 @@ private data class ShowcaseStory(
     val badge: String,
     val ride: String,
     val distance: String,
-    val date: String
+    val date: String,
+    val photoUrl: String? = null,
+    val gpsUrl: String? = null,
+    val profileUrl: String? = null
 )
 
 /**
@@ -87,6 +99,29 @@ private data class ShowcaseStory(
  * Sample content and all reactions/actions are held in Compose state only.
  * Nothing on this screen writes to Firestore or publishes to Facebook.
  */
+private fun JSONObject.v2Text(vararg keys: String): String {
+    for (key in keys) {
+        if (!has(key) || isNull(key)) continue
+        val value = opt(key)?.toString()?.trim().orEmpty()
+        if (value.isNotBlank() && value != "null") return value
+    }
+    return ""
+}
+
+private fun v2AssetUrl(path: String): String? {
+    val value = path.trim()
+    if (value.isBlank()) return null
+    if (value.startsWith("https://") || value.startsWith("http://")) return value
+    val clean = value.removePrefix("./").removePrefix("/")
+    return "https://501mtb.github.io/" + clean
+}
+
+private fun showcaseDate(value: String): String {
+    val raw = value.trim().substringBefore("T")
+    val parts = raw.split("-")
+    if (parts.size == 3 && parts[0].length == 4) return parts[2] + "/" + parts[1] + "/" + parts[0]
+    return raw.ifBlank { "DATE TBA" }
+}
 @Composable
 fun HomeFeedScreen(onOpenCommunityFeed: () -> Unit = {}) {
     val nextRides = remember {
