@@ -533,7 +533,7 @@ private fun SettingsPreview(
                 Spacer(Modifier.height(8.dp))
             }
             items(members) { member ->
-                MemberRow(member = member, onView = { onSelectMember(member) }, onChangeBadge = { onChangeMemberBadge(member) })
+                MemberRow(member = member, isAdminPreview = isAdminPreview, onView = { onSelectMember(member) }, onChangeBadge = { onChangeMemberBadge(member) })
             }
         }
         "preferences" -> Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -572,7 +572,7 @@ private fun SettingsPreview(
 }
 
 @Composable
-private fun MemberRow(member: PreviewMember, onView: () -> Unit, onChangeBadge: () -> Unit) {
+private fun MemberRow(member: PreviewMember, isAdminPreview: Boolean, onView: () -> Unit, onChangeBadge: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
