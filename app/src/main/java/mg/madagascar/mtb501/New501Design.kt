@@ -148,7 +148,7 @@ fun New501DesignApp() {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                Row(
+                if (screen != "home") Row(
                     modifier = Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -208,7 +208,7 @@ fun New501DesignApp() {
             }
         ) { padding ->
             when (screen) {
-                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" })
+                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" })
                 "club" -> ClubProfilePreview(Modifier.padding(padding))
                 "record" -> RecordPreview(Modifier.padding(padding))
                 "chat" -> GeneralChatPreview(
