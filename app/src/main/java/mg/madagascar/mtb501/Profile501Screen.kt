@@ -39,12 +39,10 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
 private const val SITE_BASE = "https://501mtb.github.io/"
-private const val APP_DATA_URL = "https://501mtb.github.io/data/app-data.json"
 private const val RIDE_PHONE = "034 93 715 00"
 
 private data class ProfileLeader(val name: String, val role: String, val photo: String)
@@ -63,46 +61,80 @@ private data class ProfileSiteData(
 )
 
 private suspend fun loadProfileSiteData(): ProfileSiteData = withContext(Dispatchers.IO) {
-    val connection = URL(APP_DATA_URL).openConnection() as HttpURLConnection
-    connection.connectTimeout = 12000
-    connection.readTimeout = 12000
-    try {
-        val root = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
-        val sheets = root.optJSONObject("sheets") ?: JSONObject()
-        val leadersJson = sheets.optJSONArray("Leaders")
-        val leaders = buildList {
-            if (leadersJson != null) for (i in 0 until leadersJson.length()) {
-                val item = leadersJson.optJSONObject(i) ?: continue
-                if (item.optString("published", "Yes") != "Yes") continue
-                val role = item.optString("role_en", item.optString("role", "Team"))
-                if (role.equals("Legend", true) || role.equals("Champion", true)) continue
-                val photo = item.optString("photo")
-                add(ProfileLeader(item.optString("name"), role, resolveSiteAsset(photo)))
-            }
+    // Read the public, deployed V2 pages. The app does not use the V2 repository
+    // workbook or its internal JSON as a data source.
+    val document = org.jsoup.Jsoup.connect(SITE_BASE)
+        .userAgent("501MTB-Android-App")
+        .timeout(20000)
+        .get()
+
+    fun cleanText(value: String): String = value
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
+    fun imageUrl(element: org.jsoup.nodes.Element): String {
+        val raw = element.absUrl("src").ifBlank { element.absUrl("data-src") }
+        return raw.ifBlank { resolveSiteAsset(element.attr("src")) }
+    }
+
+    val teamHeading = document.select("h1,h2,h3")
+        .firstOrNull { cleanText(it.text()).equals("Our Team", true) }
+    val teamSection = teamHeading?.parents()?.firstOrNull { it.tagName() == "section" }
+        ?: teamHeading?.parent()?.parent()
+    val leaders = mutableListOf<ProfileLeader>()
+    teamSection?.select("img")?.forEach { image ->
+        val card = image.parents().firstOrNull { ancestor ->
+            val text = cleanText(ancestor.text())
+            text.length in 8..260 && Regex("Founder|Admin|Ambassador|Legend|Champion", RegexOption.IGNORE_CASE)
+                .containsMatchIn(text)
+        } ?: image.parent()
+        val cardText = cleanText(card.text())
+        val alt = cleanText(image.attr("alt"))
+        val role = listOf("Founder", "Admin", "Ambassador", "Legend", "Champion")
+            .firstOrNull { cardText.contains(it, true) || alt.contains(it, true) } ?: "Team"
+        if (role.equals("Legend", true) || role.equals("Champion", true)) return@forEach
+        val name = alt.substringBefore("—").substringBefore(" - ").trim()
+            .ifBlank { cardText.replace(role, "", ignoreCase = true).trim() }
+        val photo = imageUrl(image)
+        if (name.isNotBlank() && photo.isNotBlank() &&
+            leaders.none { it.name.equals(name, true) }) {
+            leaders += ProfileLeader(name, role, photo)
         }
-        val eventsJson = sheets.optJSONArray("Events")
-        val rides = buildList {
-            if (eventsJson != null) for (i in 0 until eventsJson.length()) {
-                val item = eventsJson.optJSONObject(i) ?: continue
-                val title = item.optString("title_en", item.optString("title"))
-                val image = item.optString("image")
-                if (title.isBlank() || image.isBlank()) continue
-                add(
-                    ProfileRide(
-                        title = title,
-                        date = item.optString("date_start").take(10),
-                        location = item.optString("location_en"),
-                        description = item.optString("description_en"),
-                        image = resolveSiteAsset(image),
-                        album = item.optString("url")
-                    )
+    }
+
+    val rides = mutableListOf<ProfileRide>()
+    document.select("img[alt*=501MTB mountain biking ride or event], img[alt*=501MTB ride or event]")
+        .forEach { image ->
+            val card = image.parents().firstOrNull { ancestor ->
+                val text = cleanText(ancestor.text())
+                text.length in 20..900 &&
+                    Regex("\\d{2}/\\d{2}/\\d{4}").containsMatchIn(text)
+            } ?: image.parent()
+            val cardText = cleanText(card.text())
+            val date = Regex("\\d{2}/\\d{2}/\\d{4}").find(cardText)?.value.orEmpty()
+            val title = cleanText(image.attr("alt"))
+                .substringBefore(" — 501MTB")
+                .substringBefore(" - 501MTB")
+                .ifBlank { cardText }
+            val photo = imageUrl(image)
+            val album = card.select("a[href]").firstOrNull {
+                it.absUrl("href").contains("facebook.com", true)
+            }?.absUrl("href").orEmpty()
+            val details = cardText.removePrefix(date).trim()
+            if (date.isNotBlank() && title.isNotBlank() && photo.isNotBlank() &&
+                rides.none { it.title.equals(title, true) }) {
+                rides += ProfileRide(
+                    title = title,
+                    date = date,
+                    location = details,
+                    description = details,
+                    image = photo,
+                    album = album
                 )
             }
         }
-        ProfileSiteData(leaders, rides)
-    } finally {
-        connection.disconnect()
-    }
+
+    ProfileSiteData(leaders, rides)
 }
 
 private fun resolveSiteAsset(path: String): String {
