@@ -88,7 +88,7 @@ private suspend fun loadProfileSiteData(): ProfileSiteData = withContext(Dispatc
             val text = cleanText(ancestor.text())
             text.length in 8..260 && Regex("Founder|Admin|Ambassador|Legend|Champion", RegexOption.IGNORE_CASE)
                 .containsMatchIn(text)
-        } ?: image.parent()
+        } ?: image.parent() ?: image
         val cardText = cleanText(card.text())
         val alt = cleanText(image.attr("alt"))
         val role = listOf("Founder", "Admin", "Ambassador", "Legend", "Champion")
@@ -110,7 +110,7 @@ private suspend fun loadProfileSiteData(): ProfileSiteData = withContext(Dispatc
                 val text = cleanText(ancestor.text())
                 text.length in 20..900 &&
                     Regex("\\d{2}/\\d{2}/\\d{4}").containsMatchIn(text)
-            } ?: image.parent()
+            } ?: image.parent() ?: image
             val cardText = cleanText(card.text())
             val date = Regex("\\d{2}/\\d{2}/\\d{4}").find(cardText)?.value.orEmpty()
             val title = cleanText(image.attr("alt"))
