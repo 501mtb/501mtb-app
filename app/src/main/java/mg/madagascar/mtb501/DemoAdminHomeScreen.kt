@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -95,7 +96,7 @@ private data class ShowcaseStory(
  * Nothing on this screen writes to Firestore or publishes to Facebook.
  */
 @Composable
-fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}) {
+fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit = {}) {
     val nextRides = remember {
         mutableStateListOf(
             ShowcaseRide(1, "DATE TBA", "UPCOMING RIDE 01", "ALL LEVELS", "—", "Location to be announced", "—", false),
@@ -154,6 +155,9 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}) {
             }
             TextButton(onClick = { demoAdmin = !demoAdmin }) {
                 Text(if (demoAdmin) "EXIT ADMIN DEMO" else "ADMIN DEMO")
+            }
+            IconButton(onClick = onOpenSettings) {
+                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.primary)
             }
         }
 
