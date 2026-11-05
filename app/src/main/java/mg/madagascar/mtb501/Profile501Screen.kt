@@ -81,6 +81,11 @@ private suspend fun loadProfileSiteData(): ProfileSiteData = withContext(Dispatc
     val teamHeading = document.select("h1,h2,h3")
         .firstOrNull { cleanText(it.text()).equals("Our Team", true) }
     val teamSection = teamHeading?.parents()?.firstOrNull { it.tagName() == "section" }
+        ?: teamHeading?.parents()?.firstOrNull { ancestor ->
+            val text = cleanText(ancestor.text())
+            ancestor.select("img").isNotEmpty() &&
+                text.contains("Founder", true) && text.contains("Admin", true)
+        }
         ?: teamHeading?.parent()?.parent()
     val leaders = mutableListOf<ProfileLeader>()
     teamSection?.select("img")?.forEach { image ->
@@ -104,7 +109,7 @@ private suspend fun loadProfileSiteData(): ProfileSiteData = withContext(Dispatc
     }
 
     val rides = mutableListOf<ProfileRide>()
-    document.select("img[alt*=501MTB mountain biking ride or event], img[alt*=501MTB ride or event]")
+    document.select("img[alt*='501MTB mountain biking ride or event'], img[alt*='501MTB ride or event']")
         .forEach { image ->
             val card = image.parents().firstOrNull { ancestor ->
                 val text = cleanText(ancestor.text())
