@@ -2,6 +2,7 @@ package mg.madagascar.mtb501
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -173,6 +174,7 @@ fun Profile501Screen(
             val profileIds = repository.getPhotoAssignment("501mtb.pdp")
             profilePhoto = library.imagesForSlot("501mtb.pdp")
                 .firstOrNull { it.id in profileIds }?.url
+                ?: "https://501mtb.github.io/pdp.jpg"
         } catch (_: Exception) {
             // The official emblem and site content remain visible if remote photos are unavailable.
         } finally {
@@ -263,7 +265,7 @@ fun Profile501Screen(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val links = listOf(
                 listOf(Triple("501MTB", "https://www.facebook.com/501MTB", Color(0xFF1877F2)),
-                    Triple("Team 501", "https://www.facebook.com/groups/", Color(0xFF1877F2))),
+                    Triple("Team 501", "", Color(0xFF1877F2))),
                 listOf(Triple(RIDE_PHONE, "https://wa.me/261349371500", Color(0xFF25D366)),
                     Triple("501 GitHub", "https://github.com/501mtb", Color.White)),
                 listOf(Triple("toamasina501mtb@gmail.com", "mailto:toamasina501mtb@gmail.com", Color.White),
@@ -279,7 +281,8 @@ fun Profile501Screen(
                                     item.second.startsWith("tel:") -> Intent(Intent.ACTION_DIAL, Uri.parse(item.second))
                                     else -> Intent(Intent.ACTION_VIEW, Uri.parse(item.second))
                                 }
-                                context.startActivity(intent)
+                                if (intent != null) context.startActivity(intent)
+                                else Toast.makeText(context, "Team 501 link is not published on the V2 website yet.", Toast.LENGTH_SHORT).show()
                             } catch (_: Exception) { }
                         }
                     }
@@ -370,10 +373,10 @@ fun Profile501Screen(
         Text("ESPACE DOCUMENT", style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            DocumentBar("Ride 2025", "https://github.com/501mtb/501mtb.github.io/tree/main/Document/Archives")
+            DocumentBar("Ride 2025", "https://501mtb.github.io/documents.html")
             DocumentBar("Ride 2026", "https://github.com/501mtb/501mtb.github.io/blob/main/Document/Archives/501MTB_Ride_Links_2026.xlsx")
             DocumentBar("Code of Conduct", "https://501mtb.github.io/conduct-en.html")
-            DocumentBar("501 MTB Full Story", "https://github.com/501mtb/501mtb.github.io")
+            DocumentBar("501 MTB Full Story", "https://501mtb.github.io/about.html")
         }
 
         if (isAdmin) {
