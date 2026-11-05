@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Facebook
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Phone
@@ -25,12 +24,15 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -74,8 +76,18 @@ private suspend fun loadProfileSiteData(): ProfileSiteData = withContext(Dispatc
         .trim()
 
     fun imageUrl(element: org.jsoup.nodes.Element): String {
-        val raw = element.absUrl("src").ifBlank { element.absUrl("data-src") }
-        return raw.ifBlank { resolveSiteAsset(element.attr("src")) }
+        val candidates = listOf(
+            element.attr("src"),
+            element.attr("data-src"),
+            element.attr("data-lazy-src"),
+            element.attr("data-original"),
+            element.attr("data-image"),
+            element.attr("srcset").substringBefore(",").substringBefore(" ").trim(),
+            element.parent()?.selectFirst("source[srcset]")?.attr("srcset")
+                ?.substringBefore(",")?.substringBefore(" ")?.trim().orEmpty()
+        )
+        val raw = candidates.firstOrNull { it.isNotBlank() && !it.startsWith("data:") }.orEmpty()
+        return if (raw.isBlank()) "" else resolveSiteAsset(raw)
     }
 
     val teamHeading = document.select("h1,h2,h3")
@@ -144,8 +156,11 @@ private suspend fun loadProfileSiteData(): ProfileSiteData = withContext(Dispatc
 }
 
 private fun resolveSiteAsset(path: String): String {
-    val clean = path.removePrefix("./")
-    return if (clean.startsWith("http")) clean else SITE_BASE + clean
+    return try {
+        java.net.URI(SITE_BASE).resolve(path.trim()).toString()
+    } catch (_: Exception) {
+        path
+    }
 }
 
 @Composable
@@ -269,25 +284,24 @@ fun Profile501Screen(
         Text("USEFUL LINKS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val links = listOf(
-                listOf(Triple("501MTB", "https://www.facebook.com/501MTB", Color(0xFF1877F2)),
-                    Triple("Team 501", "", Color(0xFF1877F2))),
-                listOf(Triple(RIDE_PHONE, "https://wa.me/261349371500", Color(0xFF25D366)),
-                    Triple("501 GitHub", "https://github.com/501mtb", Color.White)),
-                listOf(Triple("toamasina501mtb@gmail.com", "mailto:toamasina501mtb@gmail.com", Color.White),
-                    Triple("Call", "tel:+261349371500", Color(0xFF25D366)))
+                listOf(Triple("501MTB", "https://www.facebook.com/501MTB", Color(0xFF1877F2)) to Icons.Default.Facebook,
+                    Triple("Team 501", "https://facebook.com/groups/739270103999083/", Color(0xFF1877F2)) to Icons.Default.Groups),
+                listOf(Triple(RIDE_PHONE, "https://wa.me/261349371500", Color(0xFF25D366)) to Icons.Default.Chat,
+                    Triple("501 GitHub", "https://github.com/501mtb", Color.White) to Icons.Default.Code),
+                listOf(Triple("toamasina501mtb@gmail.com", "mailto:toamasina501mtb@gmail.com", Color.White) to Icons.Default.Email,
+                    Triple("Call", "tel:+261349371500", Color(0xFF25D366)) to Icons.Default.Call)
             )
             links.forEach { pair ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    pair.forEach { item ->
-                        ProfileLinkBar(item.first, item.second, item.third, Modifier.weight(1f)) {
+                    pair.forEach { (item, icon) ->
+                        ProfileLinkBar(item.first, item.second, item.third, icon, Modifier.weight(1f)) {
                             try {
-                                val intent = if (item.second.isBlank()) null else when {
+                                val intent = when {
                                     item.second.startsWith("mailto:") -> Intent(Intent.ACTION_SENDTO, Uri.parse(item.second))
                                     item.second.startsWith("tel:") -> Intent(Intent.ACTION_DIAL, Uri.parse(item.second))
                                     else -> Intent(Intent.ACTION_VIEW, Uri.parse(item.second))
                                 }
-                                if (intent != null) context.startActivity(intent)
-                                else Toast.makeText(context, "Team 501 link is not published on the V2 website yet.", Toast.LENGTH_SHORT).show()
+                                context.startActivity(intent)
                             } catch (_: Exception) { }
                         }
                     }
@@ -434,6 +448,7 @@ private fun ProfileLinkBar(
     title: String,
     url: String,
     accent: Color,
+    icon: ImageVector,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
@@ -446,8 +461,8 @@ private fun ProfileLinkBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Icon(Icons.Default.Link, null, tint = if (dark) Color.Black else accent,
-            modifier = Modifier.size(16.dp))
+        Icon(icon, null, tint = if (dark) Color.Black else accent,
+            modifier = Modifier.size(18.dp))
         Text(title, color = if (dark) Color.Black else accent,
             style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
