@@ -96,7 +96,7 @@ private data class ShowcaseStory(
  * Nothing on this screen writes to Firestore or publishes to Facebook.
  */
 @Composable
-fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit = {}) {
+fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit = {}, onAdminModeChange: (Boolean) -> Unit = {}) {
     val nextRides = remember {
         mutableStateListOf(
             ShowcaseRide(1, "DATE TBA", "UPCOMING RIDE 01", "ALL LEVELS", "—", "Location to be announced", "—", false),
@@ -153,7 +153,7 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit 
                 Text(dataSourceLabel, style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
             }
-            TextButton(onClick = { demoAdmin = !demoAdmin }) {
+            TextButton(onClick = { demoAdmin = !demoAdmin; onAdminModeChange(demoAdmin) }) {
                 Text(if (demoAdmin) "EXIT ADMIN DEMO" else "ADMIN DEMO")
             }
             IconButton(onClick = onOpenSettings) {
