@@ -98,6 +98,7 @@ fun New501DesignApp() {
     var showBadgeDialog by remember { mutableStateOf(false) }
     var badgeTargetId by remember { mutableStateOf<String?>(null) }
     var showChatInfo by remember { mutableStateOf(false) }
+    var adminPreview by remember { mutableStateOf(false) }
 
     val previewMembers = remember {
         mutableStateListOf(
@@ -208,7 +209,7 @@ fun New501DesignApp() {
             }
         ) { padding ->
             when (screen) {
-                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" })
+                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" }, onAdminModeChange = { adminPreview = it })
                 "club" -> ClubProfilePreview(Modifier.padding(padding))
                 "record" -> RecordPreview(Modifier.padding(padding))
                 "chat" -> GeneralChatPreview(
@@ -218,12 +219,14 @@ fun New501DesignApp() {
                 "rider" -> RiderPreview(
                     Modifier.padding(padding),
                     member = selectedMember,
+                    isAdminPreview = adminPreview,
                     onChangeBadge = { badgeTargetId = selectedMember.memberId; showBadgeDialog = true }
                 )
                 "settings" -> SettingsPreview(
                     modifier = Modifier.padding(padding),
                     page = settingsPage,
                     members = previewMembers,
+                    isAdminPreview = adminPreview,
                     language = language,
                     themeChoice = themeChoice,
                     fontSize = fontSize,
@@ -476,7 +479,7 @@ private fun GeneralChatPreview(modifier: Modifier = Modifier, onInfo: () -> Unit
 }
 
 @Composable
-private fun RiderPreview(modifier: Modifier = Modifier, member: PreviewMember, onChangeBadge: () -> Unit) {
+private fun RiderPreview(modifier: Modifier = Modifier, member: PreviewMember, isAdminPreview: Boolean, onChangeBadge: () -> Unit) {
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -486,7 +489,7 @@ private fun RiderPreview(modifier: Modifier = Modifier, member: PreviewMember, o
                 Text(member.name.uppercase(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
                 Text(member.memberId, color = MTBMuted)
                 BadgePill(member.badge)
-                OutlinedButton(onClick = onChangeBadge) { Text("Change badge • ADMIN PREVIEW") }
+                if (isAdminPreview) OutlinedButton(onClick = onChangeBadge) { Text("Change badge • ADMIN PREVIEW") }
             }
         }
         PreviewTile("RIDER PROFILE", "Personal information will appear here", "MEMBER DETAILS")
@@ -500,6 +503,7 @@ private fun SettingsPreview(
     modifier: Modifier,
     page: String,
     members: List<PreviewMember>,
+    isAdminPreview: Boolean,
     language: String,
     themeChoice: String,
     fontSize: String,
@@ -576,10 +580,12 @@ private fun MemberRow(member: PreviewMember, onView: () -> Unit, onChangeBadge: 
                 IconButton(onClick = { expanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "Member actions") }
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     DropdownMenuItem(text = { Text("View profile") }, onClick = { expanded = false; onView() })
-                    DropdownMenuItem(
-                        text = { Text("Change badge (ADMIN)") },
-                        onClick = { expanded = false; onChangeBadge() }
-                    )
+                    if (isAdminPreview) {
+                        DropdownMenuItem(
+                            text = { Text("Change badge (ADMIN)") },
+                            onClick = { expanded = false; onChangeBadge() }
+                        )
+                    }
                 }
             }
             Box(Modifier.size(48.dp).clip(CircleShape).background(Color(0xFF263126)), contentAlignment = Alignment.Center) {
