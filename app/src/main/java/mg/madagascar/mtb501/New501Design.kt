@@ -92,7 +92,6 @@ fun New501DesignApp() {
     var currentUser by remember { mutableStateOf(auth.currentUser) }
     var isSigningIn by remember { mutableStateOf(false) }
     var authMessage by remember { mutableStateOf<String?>(null) }
-    var darkTheme by remember { mutableStateOf(true) }
     var themeChoice by remember { mutableStateOf("Dark") }
     var language by remember { mutableStateOf("English") }
     var fontSize by remember { mutableStateOf("Medium") }
@@ -119,7 +118,6 @@ fun New501DesignApp() {
         "System" -> androidx.compose.foundation.isSystemInDarkTheme()
         else -> true
     }
-    darkTheme = resolvedDark
 
     val colors = if (resolvedDark) {
         darkColorScheme(
@@ -209,7 +207,7 @@ fun New501DesignApp() {
             }
         ) { padding ->
             when (screen) {
-                "home" -> HomePreview(Modifier.padding(padding))
+                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" })
                 "club" -> ClubProfilePreview(Modifier.padding(padding))
                 "record" -> RecordPreview(Modifier.padding(padding))
                 "chat" -> GeneralChatPreview(
