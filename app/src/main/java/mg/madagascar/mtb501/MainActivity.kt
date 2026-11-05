@@ -189,7 +189,7 @@ private fun ClubApp() {
             composable("feed") { HomeFeedScreen(onOpenCommunityFeed = { navController.navigate("community-feed") }) }
             composable("community-feed") { FeedScreen(onOpenPhotoLibrary = { navController.navigate("photos") }) }
             composable("photos") { SharedPhotoLibraryScreen() }
-            composable("home") { HomeScreen() }
+            composable("home") { Profile501Screen(isAdmin = isAdmin, onOpenAdmin = { navController.navigate("admin") { launchSingleTop = true } }) }
             composable("record") { RecordRideScreen() }
             composable("chat") { ChatScreen() }
             composable("rider") { if (isAdmin) AdminRiderManagementScreen() else RiderProfileScreen() }
