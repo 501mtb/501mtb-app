@@ -96,10 +96,11 @@ fun New501DesignApp() {
     var language by remember { mutableStateOf("English") }
     var fontSize by remember { mutableStateOf("Medium") }
     var showBadgeDialog by remember { mutableStateOf(false) }
+    var badgeTargetId by remember { mutableStateOf<String?>(null) }
     var showChatInfo by remember { mutableStateOf(false) }
 
     val previewMembers = remember {
-        listOf(
+        mutableStateListOf(
             PreviewMember("Member name", "RID-001", "ROOKIE"),
             PreviewMember("Member name", "RID-002", "SUPER"),
             PreviewMember("Member name", "RID-003", "ELITE"),
@@ -217,7 +218,7 @@ fun New501DesignApp() {
                 "rider" -> RiderPreview(
                     Modifier.padding(padding),
                     member = selectedMember,
-                    onChangeBadge = { showBadgeDialog = true }
+                    onChangeBadge = { badgeTargetId = selectedMember.memberId; showBadgeDialog = true }
                 )
                 "settings" -> SettingsPreview(
                     modifier = Modifier.padding(padding),
@@ -233,6 +234,11 @@ fun New501DesignApp() {
                     onSelectMember = {
                         selectedMember = it
                         screen = "rider"
+                    },
+                    onChangeMemberBadge = {
+                        selectedMember = it
+                        badgeTargetId = it.memberId
+                        showBadgeDialog = true
                     },
                     onLanguage = { language = it },
                     onTheme = { themeChoice = it },
@@ -295,6 +301,8 @@ fun New501DesignApp() {
                         listOf("ROOKIE", "SUPER", "ELITE", "LEADER", "TOP MEMBER").forEach { badge ->
                             TextButton(onClick = {
                                 selectedMember = selectedMember.copy(badge = badge)
+                                val targetIndex = previewMembers.indexOfFirst { it.memberId == badgeTargetId }
+                                if (targetIndex >= 0) previewMembers[targetIndex] = previewMembers[targetIndex].copy(badge = badge)
                                 showBadgeDialog = false
                             }) { Text(badge) }
                         }
@@ -350,8 +358,8 @@ private fun HomePreview(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ClubProfilePreview(modifier: Modifier = Modifier) {
-    var title by remember { mutableStateOf("501MTB") }
-    var description by remember { mutableStateOf("Mountain biking community in Madagascar") }
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     var vision by remember { mutableStateOf("") }
     var mission by remember { mutableStateOf("") }
     var community by remember { mutableStateOf("") }
@@ -500,6 +508,7 @@ private fun SettingsPreview(
     authMessage: String?,
     onOpenPage: (String) -> Unit,
     onSelectMember: (PreviewMember) -> Unit,
+    onChangeMemberBadge: (PreviewMember) -> Unit,
     onLanguage: (String) -> Unit,
     onTheme: (String) -> Unit,
     onFontSize: (String) -> Unit,
@@ -520,7 +529,7 @@ private fun SettingsPreview(
                 Spacer(Modifier.height(8.dp))
             }
             items(members) { member ->
-                MemberRow(member = member, onView = { onSelectMember(member) })
+                MemberRow(member = member, onView = { onSelectMember(member) }, onChangeBadge = { onChangeMemberBadge(member) })
             }
         }
         "preferences" -> Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -559,7 +568,7 @@ private fun SettingsPreview(
 }
 
 @Composable
-private fun MemberRow(member: PreviewMember, onView: () -> Unit) {
+private fun MemberRow(member: PreviewMember, onView: () -> Unit, onChangeBadge: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -569,7 +578,7 @@ private fun MemberRow(member: PreviewMember, onView: () -> Unit) {
                     DropdownMenuItem(text = { Text("View profile") }, onClick = { expanded = false; onView() })
                     DropdownMenuItem(
                         text = { Text("Change badge (ADMIN)") },
-                        onClick = { expanded = false }
+                        onClick = { expanded = false; onChangeBadge() }
                     )
                 }
             }
