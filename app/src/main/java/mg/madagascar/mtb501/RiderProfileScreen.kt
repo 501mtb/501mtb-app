@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -30,12 +30,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,20 +49,46 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 @Composable
 fun RiderProfileScreen() {
     val auth = remember { FirebaseAuth.getInstance() }
+    val context = LocalContext.current
+    val credentialManager = remember { CredentialManager.create(context) }
+    val scope = rememberCoroutineScope()
+    var currentUser by remember { mutableStateOf(auth.currentUser) }
+    var signingIn by remember { mutableStateOf(false) }
+    var authMessage by remember { mutableStateOf<String?>(null) }
     var account by remember { mutableStateOf<ClubUser?>(null) }
+    DisposableEffect(auth) {
+        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            currentUser = firebaseAuth.currentUser
+            if (firebaseAuth.currentUser == null) account = null
+        }
+        auth.addAuthStateListener(listener)
+        onDispose { auth.removeAuthStateListener(listener) }
+    }
     var assignedBadge by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
     var settingsOpen by remember { mutableStateOf(false) }
     var clubSummary by remember { mutableStateOf<ClubSummary?>(null) }
     var loadMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(auth.currentUser?.uid) {
+    LaunchedEffect(currentUser?.uid) {
         loading = true
         try {
             val repository = ClubRepository()
@@ -78,7 +109,7 @@ fun RiderProfileScreen() {
         }
     }
 
-    val user = auth.currentUser
+    val user = currentUser
     val riderName = account?.displayName?.takeIf { it.isNotBlank() }
         ?: user?.displayName?.takeIf { it.isNotBlank() }
         ?: "501MTB Rider"
@@ -94,9 +125,6 @@ fun RiderProfileScreen() {
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { auth.signOut() }, modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                Icon(Icons.Default.Logout, contentDescription = "Sign out", tint = MaterialTheme.colorScheme.primary)
-            }
             Spacer(Modifier.size(8.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("Rider Profile", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -114,11 +142,86 @@ fun RiderProfileScreen() {
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Parameters", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    SettingLine("Account", "Google account and sign-in status")
+                    Text("ACCOUNT", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text(user?.email ?: "No Google account connected", style = MaterialTheme.typography.bodyMedium)
+                    if (user == null) {
+                        Button(onClick = {
+                            scope.launch {
+                                signingIn = true
+                                authMessage = null
+                                try {
+                                    val option = GetGoogleIdOption.Builder()
+                                        .setFilterByAuthorizedAccounts(false)
+                                        .setServerClientId(context.getString(R.string.default_web_client_id))
+                                        .build()
+                                    val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
+                                    val result = credentialManager.getCredential(context, request)
+                                    val credential = result.credential
+                                    if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                        val token = GoogleIdTokenCredential.createFrom(credential.data)
+                                        auth.signInWithCredential(GoogleAuthProvider.getCredential(token.idToken, null)).await()
+                                    } else authMessage = "Google sign-in did not return a valid account."
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (error: GetCredentialException) {
+                                    authMessage = "Google sign-in was cancelled or unavailable."
+                                } catch (error: Exception) {
+                                    authMessage = error.localizedMessage ?: "Sign-in failed."
+                                } finally {
+                                    signingIn = false
+                                }
+                            }
+                        }, enabled = !signingIn, modifier = Modifier.fillMaxWidth()) {
+                            if (signingIn) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            else Text("LOG IN WITH GOOGLE")
+                        }
+                    } else {
+                        Button(onClick = {
+                            scope.launch {
+                                signingIn = true
+                                authMessage = null
+                                try {
+                                    auth.signOut()
+                                    credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                                    val option = GetGoogleIdOption.Builder()
+                                        .setFilterByAuthorizedAccounts(false)
+                                        .setServerClientId(context.getString(R.string.default_web_client_id))
+                                        .build()
+                                    val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
+                                    val result = credentialManager.getCredential(context, request)
+                                    val credential = result.credential
+                                    if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                        val token = GoogleIdTokenCredential.createFrom(credential.data)
+                                        auth.signInWithCredential(GoogleAuthProvider.getCredential(token.idToken, null)).await()
+                                    } else authMessage = "Google did not return a valid account."
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (error: GetCredentialException) {
+                                    authMessage = "Account switch cancelled. You are signed out."
+                                } catch (error: Exception) {
+                                    authMessage = error.localizedMessage ?: "Could not switch account."
+                                } finally {
+                                    signingIn = false
+                                }
+                            }
+                        }, enabled = !signingIn, modifier = Modifier.fillMaxWidth()) {
+                            if (signingIn) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            else Text("SWITCH USER")
+                        }
+                        TextButton(onClick = {
+                            scope.launch {
+                                auth.signOut()
+                                try { credentialManager.clearCredentialState(ClearCredentialStateRequest()) } catch (_: Exception) { }
+                                authMessage = null
+                            }
+                        }, modifier = Modifier.fillMaxWidth()) { Text("LOG OUT") }
+                    }
+                    authMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+                    Divider()
+                    Text("OTHER SETTINGS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     SettingLine("Profile visibility", "Public rider profile preferences")
                     SettingLine("Notifications", "Ride and community notification preferences")
                     SettingLine("App preferences", "Language and display options")
-                    Text("These settings are a visual entry point; preference controls will be connected in a later step.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
