@@ -252,12 +252,23 @@ class ClubRepository(
         require(uid.isNotBlank()) { "Account ID is missing." }
         val adminUid = auth.currentUser?.uid ?: error("Administrator sign-in is required.")
         val userRef = db.collection("users").document(uid)
+
         db.runTransaction { transaction ->
             val userSnapshot = transaction.get(userRef)
             require(userSnapshot.exists()) { "Account no longer exists." }
             require(userSnapshot.getString("approvalStatus") == ApprovalStatus.PENDING.name) {
                 "This account has already been reviewed."
             }
+
+            val memberId = userSnapshot.getString("memberId").orEmpty()
+            require(memberId.matches(Regex("R-[0-9]{3}"))) {
+                "This account does not have a valid 501MTB member ID."
+            }
+
+            // Read the member document before writing, as required by Firestore transactions.
+            val memberRef = db.collection("members").document(memberId)
+            val memberSnapshot = transaction.get(memberRef)
+
             transaction.update(
                 userRef,
                 mapOf(
@@ -266,6 +277,24 @@ class ClubRepository(
                     "reviewedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
                 )
             )
+
+            // Create the directory/attendance profile once when the account is approved.
+            // Preserve an existing manually curated member profile if one is already present.
+            if (approve && !memberSnapshot.exists()) {
+                val displayName = userSnapshot.getString("displayName").orEmpty().trim()
+                    .ifBlank { userSnapshot.getString("email").orEmpty().substringBefore("@").ifBlank { "501MTB Rider" } }
+                val photoURL = userSnapshot.getString("photoURL")
+                val memberData = mutableMapOf<String, Any>(
+                    "uid" to uid,
+                    "memberId" to memberId,
+                    "name" to displayName,
+                    "badge" to "Rookie",
+                    "publicProfile" to true,
+                    "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
+                if (!photoURL.isNullOrBlank()) memberData["photoURL"] = photoURL
+                transaction.set(memberRef, memberData)
+            }
             null
         }.await()
     }
