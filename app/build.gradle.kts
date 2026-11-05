@@ -71,6 +71,9 @@ dependencies {
     // Image loading for the community feed.
     implementation("io.coil-kt:coil-compose:2.7.0")
 
+    // Parse the live, published 501MTB V2 website pages for profile content.
+    implementation("org.jsoup:jsoup:1.21.1")
+
     // Modern Google sign-in flow using Android Credential Manager.
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
