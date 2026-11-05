@@ -276,7 +276,7 @@ fun Profile501Screen(
                     pair.forEach { item ->
                         ProfileLinkBar(item.first, item.second, item.third, Modifier.weight(1f)) {
                             try {
-                                val intent = when {
+                                val intent = if (item.second.isBlank()) null else when {
                                     item.second.startsWith("mailto:") -> Intent(Intent.ACTION_SENDTO, Uri.parse(item.second))
                                     item.second.startsWith("tel:") -> Intent(Intent.ACTION_DIAL, Uri.parse(item.second))
                                     else -> Intent(Intent.ACTION_VIEW, Uri.parse(item.second))
