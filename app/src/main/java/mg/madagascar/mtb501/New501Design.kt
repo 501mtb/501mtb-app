@@ -32,6 +32,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import org.json.JSONObject
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -59,6 +61,24 @@ private data class PreviewMember(
     val memberId: String,
     val badge: String
 )
+
+private fun tr(language: String, en: String, fr: String, mg: String): String = when (language) {
+    "Français" -> fr
+    "Malagasy" -> mg
+    else -> en
+}
+
+private fun loadWorkbookRoster(context: Context): List<PreviewMember> = runCatching {
+    val json = context.assets.open("501mtb-roster.json").bufferedReader().use { it.readText() }
+    val members = JSONObject(json).getJSONArray("members")
+    (0 until members.length()).mapNotNull { index ->
+        val item = members.getJSONObject(index)
+        val id = item.optString("id").trim()
+        val name = item.optString("name").trim()
+        if (id.isBlank() || name.isBlank()) null
+        else PreviewMember(name, id, item.optString("badge", "Rookie"))
+    }
+}.getOrDefault(emptyList())
 
 private data class MainTab(
     val route: String,
@@ -92,9 +112,18 @@ fun New501DesignApp() {
     var currentUser by remember { mutableStateOf(auth.currentUser) }
     var isSigningIn by remember { mutableStateOf(false) }
     var authMessage by remember { mutableStateOf<String?>(null) }
-    var themeChoice by remember { mutableStateOf("Dark") }
-    var language by remember { mutableStateOf("English") }
-    var fontSize by remember { mutableStateOf("Medium") }
+    val appPrefs = remember { context.getSharedPreferences("501mtb_app_preferences", Context.MODE_PRIVATE) }
+    var themeChoice by remember { mutableStateOf(appPrefs.getString("theme", "Dark") ?: "Dark") }
+    var language by remember { mutableStateOf(appPrefs.getString("language", "English") ?: "English") }
+    var fontSize by remember { mutableStateOf(appPrefs.getString("fontSize", "Medium") ?: "Medium") }
+
+    LaunchedEffect(themeChoice, language, fontSize) {
+        appPrefs.edit()
+            .putString("theme", themeChoice)
+            .putString("language", language)
+            .putString("fontSize", fontSize)
+            .apply()
+    }
     var showBadgeDialog by remember { mutableStateOf(false) }
     var badgeTargetId by remember { mutableStateOf<String?>(null) }
     var showChatInfo by remember { mutableStateOf(false) }
@@ -112,14 +141,23 @@ fun New501DesignApp() {
         if (currentUser != null) {
             isLoadingMembers = true
             try {
+                // Every authenticated Google account receives a pending 501MTB record
+                // and member ID before its approval status is checked.
+                repository.ensurePendingAccount()
                 val account = repository.getMyAccount()
                 isAdmin = account?.role == AppRole.ADMIN
+
+                // The published V2 workbook export is the base registry. Firestore
+                // records overlay it when a badge has been changed by an administrator.
+                val merged = linkedMapOf<String, PreviewMember>()
+                loadWorkbookRoster(context).forEach { merged[it.name.trim().lowercase()] = it }
                 val records = if (isAdmin) repository.getAllMembers() else repository.getPublicMembers()
-                previewMembers.addAll(records.map {
-                    PreviewMember(it.name, it.id, it.badge)
-                })
+                records.forEach {
+                    merged[it.name.trim().lowercase()] = PreviewMember(it.name, it.id, it.badge)
+                }
+                previewMembers.addAll(merged.values.sortedBy { it.name.lowercase() })
                 if (account == null) {
-                    authMessage = "Google account connected, but no existing 501MTB user record was found."
+                    authMessage = "Google account connected, but no 501MTB user record was found."
                 }
             } catch (error: Exception) {
                 authMessage = error.localizedMessage ?: "Unable to load 501MTB member records."
@@ -178,6 +216,16 @@ fun New501DesignApp() {
         )
     }
 
+    val baseDensity = LocalDensity.current
+    val fontScaleFactor = when (fontSize) {
+        "Small" -> 0.90f
+        "Large" -> 1.15f
+        else -> 1.0f
+    }
+
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalDensity provides baseDensity.copy(fontScale = baseDensity.fontScale * fontScaleFactor)
+    ) {
     MaterialTheme(colorScheme = colors) {
         val inSettings = screen == "settings"
         val mainScreen = screen in listOf("home", "club", "record", "chat", "rider")
@@ -196,14 +244,14 @@ fun New501DesignApp() {
                         }
                         Text(
                             when (settingsPage) {
-                                "members" -> "ALL MEMBERS"
-                                "preferences" -> "APP PREFERENCES"
-                                "language" -> "LANGUAGE"
-                                "theme" -> "THEME"
-                                "font" -> "FONT SIZE"
-                                "account" -> "GOOGLE ACCOUNT"
-                                "approvals" -> "PENDING APPROVALS"
-                                else -> "SETTINGS"
+                                "members" -> tr(language, "ALL MEMBERS", "TOUS LES MEMBRES", "NY MPAMBARA REHETRA")
+                                "preferences" -> tr(language, "APP PREFERENCES", "PRÉFÉRENCES", "SAFIDIN'NY RINDRANA")
+                                "language" -> tr(language, "LANGUAGE", "LANGUE", "TENY")
+                                "theme" -> tr(language, "THEME", "THÈME", "ENDRIKA")
+                                "font" -> tr(language, "FONT SIZE", "TAILLE DU TEXTE", "HABEN'NY SORATRA")
+                                "account" -> tr(language, "GOOGLE ACCOUNT", "COMPTE GOOGLE", "KAONTY GOOGLE")
+                                "approvals" -> tr(language, "PENDING APPROVALS", "DEMANDES EN ATTENTE", "FANKATOAVANA MIANDRY")
+                                else -> tr(language, "SETTINGS", "PARAMÈTRES", "FANDAMINANA")
                             },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
@@ -237,7 +285,17 @@ fun New501DesignApp() {
                                 selected = screen == tab.route,
                                 onClick = { screen = tab.route },
                                 icon = { Icon(tab.icon, contentDescription = tab.label) },
-                                label = { Text(tab.label, fontSize = 10.sp) }
+                                label = { Text(
+                                    when (tab.route) {
+                                        "home" -> tr(language, "Home", "Accueil", "Fandraisana")
+                                        "club" -> tr(language, "501 Profile", "Profil 501", "Mombamomba 501")
+                                        "record" -> tr(language, "Record", "Activité", "Dia")
+                                        "chat" -> tr(language, "Chat", "Discussion", "Resaka")
+                                        "rider" -> tr(language, "Rider", "Cycliste", "Mpitaingina")
+                                        else -> tab.label
+                                    },
+                                    fontSize = 10.sp
+                                ) }
                             )
                         }
                     }
@@ -246,7 +304,7 @@ fun New501DesignApp() {
         ) { padding ->
             when (screen) {
                 "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" }, onAdminModeChange = { /* Preview mode only; never grants administrator access. */ })
-                "club" -> ClubProfilePreview(Modifier.padding(padding))
+                "club" -> ClubProfilePreview(Modifier.padding(padding), isAdmin = isAdmin, language = language)
                 "record" -> RecordPreview(Modifier.padding(padding))
                 "chat" -> GeneralChatPreview(
                     Modifier.padding(padding),
@@ -360,7 +418,7 @@ fun New501DesignApp() {
                                 } else {
                                     scope.launch {
                                         try {
-                                            repository.updateMemberBadge(badgeTargetId!!, badge)
+                                            repository.updateMemberBadge(badgeTargetId!!, badge, selectedMember.name)
                                             selectedMember = selectedMember.copy(badge = badge)
                                             val targetIndex = previewMembers.indexOfFirst { it.memberId == badgeTargetId }
                                             if (targetIndex >= 0) previewMembers[targetIndex] = previewMembers[targetIndex].copy(badge = badge)
@@ -389,6 +447,7 @@ fun New501DesignApp() {
                 confirmButton = { TextButton(onClick = { showChatInfo = false }) { Text("OK") } }
             )
         }
+    }
     }
 }
 
@@ -425,7 +484,11 @@ private fun HomePreview(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ClubProfilePreview(modifier: Modifier = Modifier) {
+private fun ClubProfilePreview(
+    modifier: Modifier = Modifier,
+    isAdmin: Boolean,
+    language: String
+) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var vision by remember { mutableStateOf("") }
@@ -434,39 +497,62 @@ private fun ClubProfilePreview(modifier: Modifier = Modifier) {
     var editing by remember { mutableStateOf<String?>(null) }
     var editValue by remember { mutableStateOf("") }
 
-    val parts = listOf(
-        Triple("TITLE", title, "title"),
-        Triple("DESCRIPTION", description, "description"),
+    val sections = listOf(
         Triple("OUR VISION", vision, "vision"),
         Triple("OUR MISSION", mission, "mission"),
         Triple("OUR COMMUNITY", community, "community")
     )
 
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("501 PROFILE", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-        parts.forEach { (label, value, key) ->
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(label, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        var expanded by remember { mutableStateOf(false) }
-                        Box {
-                            IconButton(onClick = { expanded = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Edit $label")
-                            }
-                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                                DropdownMenuItem(
-                                    text = { Text(if (value.isBlank()) "Add" else "Modify") },
-                                    onClick = {
-                                        editValue = value
-                                        editing = key
-                                        expanded = false
-                                    }
-                                )
-                            }
-                        }
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Text(
+            tr(language, "501 PROFILE", "PROFIL 501", "MOMBA NY 501"),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Black
+        )
+
+        listOf(
+            Triple("TITLE", title, "title"),
+            Triple("DESCRIPTION", description, "description")
+        ).forEach { (label, value, key) ->
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    if (isAdmin) SectionEditMenu(value.isBlank(), label) {
+                        editValue = value
+                        editing = key
                     }
-                    Text(value.ifBlank { "Content not added yet" }, color = if (value.isBlank()) MTBMuted else MaterialTheme.colorScheme.onSurface)
+                }
+                Text(
+                    value.ifBlank { tr(language, "Content not added yet", "Contenu à ajouter", "Mbola tsy nampidirina") },
+                    color = if (value.isBlank()) MTBMuted else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+
+        sections.forEach { (label, value, key) ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 68.dp).padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text(label, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Text(
+                            value.ifBlank { tr(language, "Content not added yet", "Contenu à ajouter", "Mbola tsy nampidirina") },
+                            color = if (value.isBlank()) MTBMuted else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    if (isAdmin) SectionEditMenu(value.isBlank(), label) {
+                        editValue = value
+                        editing = key
+                    }
                 }
             }
         }
@@ -475,14 +561,14 @@ private fun ClubProfilePreview(modifier: Modifier = Modifier) {
     if (editing != null) {
         AlertDialog(
             onDismissRequest = { editing = null },
-            title = { Text("Edit section") },
+            title = { Text(tr(language, "Edit section", "Modifier la section", "Hanova ny fizarana")) },
             text = {
                 OutlinedTextField(
                     value = editValue,
                     onValueChange = { editValue = it },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
-                    label = { Text("Content") }
+                    label = { Text(tr(language, "Content", "Contenu", "Votoaty")) }
                 )
             },
             confirmButton = {
@@ -495,10 +581,33 @@ private fun ClubProfilePreview(modifier: Modifier = Modifier) {
                         "community" -> community = editValue
                     }
                     editing = null
-                }) { Text("Save preview") }
+                }) { Text(tr(language, "Save preview", "Enregistrer l'aperçu", "Tehirizo ny topimaso")) }
             },
-            dismissButton = { TextButton(onClick = { editing = null }) { Text("Cancel") } }
+            dismissButton = {
+                TextButton(onClick = { editing = null }) {
+                    Text(tr(language, "Cancel", "Annuler", "Hanafoana"))
+                }
+            }
         )
+    }
+}
+
+@Composable
+private fun SectionEditMenu(isEmpty: Boolean, label: String, onEdit: () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Default.MoreVert, contentDescription = "Edit $label")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(if (isEmpty) "Add" else "Modify") },
+                onClick = {
+                    expanded = false
+                    onEdit()
+                }
+            )
+        }
     }
 }
 
@@ -591,25 +700,25 @@ private fun SettingsPreview(
 ) {
     when (page) {
         "main" -> Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("SETTINGS", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-            SettingsBar("All Members", "Browse the complete 501MTB member register", Icons.Default.Groups) { onOpenPage("members") }
+            Text(tr(language, "SETTINGS", "PARAMÈTRES", "FANDAMINANA"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+            SettingsBar(tr(language, "All Members", "Tous les membres", "Mpikambana rehetra"), tr(language, "Browse the complete 501MTB member register", "Consulter le registre complet des membres 501MTB", "Hijery ny lisitry ny mpikambana 501MTB"), Icons.Default.Groups) { onOpenPage("members") }
             if (isAdminPreview) {
-                SettingsBar("Pending Approvals", "Review new member account requests", Icons.Default.Person) { onOpenPage("approvals") }
+                SettingsBar(tr(language, "Pending Approvals", "Demandes en attente", "Fankatoavana miandry"), tr(language, "Review new member account requests", "Valider les nouvelles demandes de compte", "Hamarino ny fangatahana kaonty vaovao"), Icons.Default.Person) { onOpenPage("approvals") }
             }
-            SettingsBar("App Preferences", "Language, theme and font size", Icons.Default.Palette) { onOpenPage("preferences") }
-            SettingsBar("Google Account", currentUser?.email ?: "Sign in or manage your account", Icons.Default.Person) { onOpenPage("account") }
+            SettingsBar(tr(language, "App Preferences", "Préférences", "Safidin'ny rindrana"), tr(language, "Language, theme and font size", "Langue, thème et taille du texte", "Teny, endrika ary haben'ny soratra"), Icons.Default.Palette) { onOpenPage("preferences") }
+            SettingsBar(tr(language, "Google Account", "Compte Google", "Kaonty Google"), currentUser?.email ?: tr(language, "Sign in or manage your account", "Se connecter ou gérer le compte", "Hiditra na hitantana ny kaonty"), Icons.Default.Person) { onOpenPage("account") }
         }
         "members" -> LazyColumn(modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 14.dp)) {
             item {
-                Text("MEMBERS", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                Text(tr(language, "MEMBERS", "MEMBRES", "MPIKAMBANA"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
                 Text(
-                    if (isAdminPreview) "Members loaded from the 501MTB database"
-                    else "Public 501MTB member profiles",
+                    if (isAdminPreview) tr(language, "Complete 501MTB registry", "Registre complet 501MTB", "Lisitry ny mpikambana 501MTB")
+                    else tr(language, "501MTB member registry", "Registre des membres 501MTB", "Lisitry ny mpikambana 501MTB"),
                     color = MTBMuted
                 )
                 if (members.isEmpty()) {
                     Text(
-                        if (isLoadingMembers) "Loading members…" else "No member profiles available.",
+                        if (isLoadingMembers) tr(language, "Loading members…", "Chargement des membres…", "Fampidirana ny mpikambana…") else tr(language, "No member profiles available.", "Aucun membre disponible.", "Tsy misy mpikambana hita."),
                         color = MTBMuted
                     )
                 }
@@ -627,12 +736,12 @@ private fun SettingsPreview(
                     contentPadding = PaddingValues(vertical = 14.dp)
                 ) {
                     item {
-                        Text("NEW MEMBER REQUESTS", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-                        Text("Approve or reject accounts waiting for 501MTB validation.", color = MTBMuted)
+                        Text(tr(language, "NEW MEMBER REQUESTS", "NOUVELLES DEMANDES", "FANGATAHANA VAOVAO"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                        Text(tr(language, "Approve or reject accounts waiting for 501MTB validation.", "Approuver ou refuser les comptes en attente de validation 501MTB.", "Ekeo na lavina ny kaonty miandry fanamarinana 501MTB."), color = MTBMuted)
                         if (isLoadingApprovals) {
                             CircularProgressIndicator(Modifier.padding(vertical = 12.dp))
                         } else if (pendingAccounts.isEmpty()) {
-                            Text("No pending requests.", color = MTBMuted, modifier = Modifier.padding(top = 12.dp))
+                            Text(tr(language, "No pending requests.", "Aucune demande en attente.", "Tsy misy fangatahana miandry."), color = MTBMuted, modifier = Modifier.padding(top = 12.dp))
                         }
                         approvalMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall) }
                     }
@@ -644,10 +753,10 @@ private fun SettingsPreview(
                                 Text("501MTB ID: ${account.memberId.ifBlank { "Not assigned" }}", color = MTBMuted, style = MaterialTheme.typography.bodySmall)
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Button(onClick = { onReviewAccount(account, true) }, modifier = Modifier.weight(1f)) {
-                                        Text("APPROVE")
+                                        Text(tr(language, "APPROVE", "APPROUVER", "EKENA"))
                                     }
                                     OutlinedButton(onClick = { onReviewAccount(account, false) }, modifier = Modifier.weight(1f)) {
-                                        Text("REJECT")
+                                        Text(tr(language, "REJECT", "REFUSER", "LAVINA"))
                                     }
                                 }
                             }
@@ -659,15 +768,15 @@ private fun SettingsPreview(
             }
         }
         "preferences" -> Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SettingsBar("Language", language, Icons.Default.Language) { onOpenPage("language") }
-            SettingsBar("Theme", themeChoice, Icons.Default.Palette) { onOpenPage("theme") }
-            SettingsBar("Font Size", fontSize, Icons.Default.TextFields) { onOpenPage("font") }
+            SettingsBar(tr(language, "Language", "Langue", "Teny"), language, Icons.Default.Language) { onOpenPage("language") }
+            SettingsBar(tr(language, "Theme", "Thème", "Endrika"), themeChoice, Icons.Default.Palette) { onOpenPage("theme") }
+            SettingsBar(tr(language, "Font Size", "Taille du texte", "Haben'ny soratra"), fontSize, Icons.Default.TextFields) { onOpenPage("font") }
         }
-        "language" -> ChoicePage(modifier, "Choose language", listOf("English", "Français", "Malagasy"), language, onLanguage)
-        "theme" -> ChoicePage(modifier, "Choose theme", listOf("Light", "Dark", "System"), themeChoice, onTheme)
-        "font" -> ChoicePage(modifier, "Choose font size", listOf("Small", "Medium", "Large"), fontSize, onFontSize)
+        "language" -> ChoicePage(modifier, tr(language, "Choose language", "Choisir la langue", "Misafidiana teny"), listOf("English", "Français", "Malagasy"), language, onLanguage)
+        "theme" -> ChoicePage(modifier, tr(language, "Choose theme", "Choisir le thème", "Misafidiana endrika"), listOf("Light", "Dark", "System"), themeChoice, onTheme)
+        "font" -> ChoicePage(modifier, tr(language, "Choose font size", "Choisir la taille du texte", "Misafidiana haben'ny soratra"), listOf("Small", "Medium", "Large"), fontSize, onFontSize)
         "account" -> Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("GOOGLE ACCOUNT", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+            Text(tr(language, "GOOGLE ACCOUNT", "COMPTE GOOGLE", "KAONTY GOOGLE"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (currentUser == null) {
