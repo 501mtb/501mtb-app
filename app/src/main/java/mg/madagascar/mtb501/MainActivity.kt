@@ -79,7 +79,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ClubTheme {
-                ClubApp()
+                New501DesignApp()
             }
         }
     }
