@@ -101,6 +101,9 @@ fun New501DesignApp() {
     var isAdmin by remember { mutableStateOf(false) }
     var isLoadingMembers by remember { mutableStateOf(false) }
     val previewMembers = remember { mutableStateListOf<PreviewMember>() }
+    val pendingAccounts = remember { mutableStateListOf<PendingAccount>() }
+    var isLoadingApprovals by remember { mutableStateOf(false) }
+    var approvalMessage by remember { mutableStateOf<String?>(null) }
     val repository = remember { ClubRepository() }
 
     LaunchedEffect(currentUser?.uid) {
@@ -122,6 +125,21 @@ fun New501DesignApp() {
                 authMessage = error.localizedMessage ?: "Unable to load 501MTB member records."
             } finally {
                 isLoadingMembers = false
+            }
+        }
+    }
+
+    LaunchedEffect(screen, settingsPage, isAdmin) {
+        if (screen == "settings" && settingsPage == "approvals" && isAdmin) {
+            isLoadingApprovals = true
+            approvalMessage = null
+            try {
+                pendingAccounts.clear()
+                pendingAccounts.addAll(repository.getPendingAccounts())
+            } catch (error: Exception) {
+                approvalMessage = error.localizedMessage ?: "Unable to load pending accounts."
+            } finally {
+                isLoadingApprovals = false
             }
         }
     }
@@ -184,6 +202,7 @@ fun New501DesignApp() {
                                 "theme" -> "THEME"
                                 "font" -> "FONT SIZE"
                                 "account" -> "GOOGLE ACCOUNT"
+                                "approvals" -> "PENDING APPROVALS"
                                 else -> "SETTINGS"
                             },
                             style = MaterialTheme.typography.titleMedium,
@@ -226,7 +245,7 @@ fun New501DesignApp() {
             }
         ) { padding ->
             when (screen) {
-                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" }, onAdminModeChange = { /* Demo toggle never grants administrator access. */ })
+                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" })
                 "club" -> ClubProfilePreview(Modifier.padding(padding))
                 "record" -> RecordPreview(Modifier.padding(padding))
                 "chat" -> GeneralChatPreview(
@@ -245,6 +264,9 @@ fun New501DesignApp() {
                     members = previewMembers,
                     isAdminPreview = isAdmin,
                     isLoadingMembers = isLoadingMembers,
+                    pendingAccounts = pendingAccounts,
+                    isLoadingApprovals = isLoadingApprovals,
+                    approvalMessage = approvalMessage,
                     language = language,
                     themeChoice = themeChoice,
                     fontSize = fontSize,
@@ -260,6 +282,17 @@ fun New501DesignApp() {
                         selectedMember = it
                         badgeTargetId = it.memberId
                         showBadgeDialog = true
+                    },
+                    onReviewAccount = { account, approve ->
+                        scope.launch {
+                            try {
+                                repository.reviewAccount(account.uid, approve)
+                                pendingAccounts.removeAll { it.uid == account.uid }
+                                approvalMessage = if (approve) "Account approved." else "Account rejected."
+                            } catch (error: Exception) {
+                                approvalMessage = error.localizedMessage ?: "Unable to review this account."
+                            }
+                        }
                     },
                     onLanguage = { language = it },
                     onTheme = { themeChoice = it },
@@ -537,6 +570,9 @@ private fun SettingsPreview(
     members: List<PreviewMember>,
     isAdminPreview: Boolean,
     isLoadingMembers: Boolean,
+    pendingAccounts: List<PendingAccount>,
+    isLoadingApprovals: Boolean,
+    approvalMessage: String?,
     language: String,
     themeChoice: String,
     fontSize: String,
@@ -546,6 +582,7 @@ private fun SettingsPreview(
     onOpenPage: (String) -> Unit,
     onSelectMember: (PreviewMember) -> Unit,
     onChangeMemberBadge: (PreviewMember) -> Unit,
+    onReviewAccount: (PendingAccount, Boolean) -> Unit,
     onLanguage: (String) -> Unit,
     onTheme: (String) -> Unit,
     onFontSize: (String) -> Unit,
@@ -555,7 +592,10 @@ private fun SettingsPreview(
     when (page) {
         "main" -> Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("SETTINGS", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-            SettingsBar("All Members", "Browse the 501MTB member list", Icons.Default.Groups) { onOpenPage("members") }
+            SettingsBar("All Members", "Browse the complete 501MTB member register", Icons.Default.Groups) { onOpenPage("members") }
+            if (isAdminPreview) {
+                SettingsBar("Pending Approvals", "Review new member account requests", Icons.Default.Person) { onOpenPage("approvals") }
+            }
             SettingsBar("App Preferences", "Language, theme and font size", Icons.Default.Palette) { onOpenPage("preferences") }
             SettingsBar("Google Account", currentUser?.email ?: "Sign in or manage your account", Icons.Default.Person) { onOpenPage("account") }
         }
@@ -577,6 +617,45 @@ private fun SettingsPreview(
             }
             items(members) { member ->
                 MemberRow(member = member, isAdminPreview = isAdminPreview, onView = { onSelectMember(member) }, onChangeBadge = { onChangeMemberBadge(member) })
+            }
+        }
+        "approvals" -> {
+            if (isAdminPreview) {
+                LazyColumn(
+                    modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(vertical = 14.dp)
+                ) {
+                    item {
+                        Text("NEW MEMBER REQUESTS", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                        Text("Approve or reject accounts waiting for 501MTB validation.", color = MTBMuted)
+                        if (isLoadingApprovals) {
+                            CircularProgressIndicator(Modifier.padding(vertical = 12.dp))
+                        } else if (pendingAccounts.isEmpty()) {
+                            Text("No pending requests.", color = MTBMuted, modifier = Modifier.padding(top = 12.dp))
+                        }
+                        approvalMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall) }
+                    }
+                    items(pendingAccounts, key = { it.uid }) { account ->
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(account.displayName.ifBlank { "New 501MTB member" }, fontWeight = FontWeight.Bold)
+                                Text(account.email, color = MTBMuted, style = MaterialTheme.typography.bodySmall)
+                                Text("501MTB ID: ${account.memberId.ifBlank { "Not assigned" }}", color = MTBMuted, style = MaterialTheme.typography.bodySmall)
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(onClick = { onReviewAccount(account, true) }, modifier = Modifier.weight(1f)) {
+                                        Text("APPROVE")
+                                    }
+                                    OutlinedButton(onClick = { onReviewAccount(account, false) }, modifier = Modifier.weight(1f)) {
+                                        Text("REJECT")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Text("Administrator access required.", modifier = modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
             }
         }
         "preferences" -> Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
