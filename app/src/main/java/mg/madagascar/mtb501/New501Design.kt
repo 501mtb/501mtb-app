@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalDensity
 import org.json.JSONObject
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.ClearCredentialStateRequest
@@ -224,7 +225,7 @@ fun New501DesignApp() {
     }
 
     androidx.compose.runtime.CompositionLocalProvider(
-        LocalDensity provides baseDensity.copy(fontScale = baseDensity.fontScale * fontScaleFactor)
+        LocalDensity provides Density(baseDensity.density, baseDensity.fontScale * fontScaleFactor)
     ) {
     MaterialTheme(colorScheme = colors) {
         val inSettings = screen == "settings"
