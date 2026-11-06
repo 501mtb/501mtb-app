@@ -245,7 +245,7 @@ fun New501DesignApp() {
             }
         ) { padding ->
             when (screen) {
-                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" })
+                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" }, onAdminModeChange = { /* Preview mode only; never grants administrator access. */ })
                 "club" -> ClubProfilePreview(Modifier.padding(padding))
                 "record" -> RecordPreview(Modifier.padding(padding))
                 "chat" -> GeneralChatPreview(
