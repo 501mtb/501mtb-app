@@ -410,7 +410,7 @@ fun New501DesignApp() {
                 title = { Text("Change rider badge") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("Rookie", "Super", "Elite", "Leader", "Top Member").forEach { badge ->
+                        listOf("Rookie", "Super", "Elite", "Leader", "Top Member", "Admin", "Ambassador").forEach { badge ->
                             TextButton(onClick = {
                                 if (!isAdmin || badgeTargetId.isNullOrBlank()) {
                                     authMessage = "Administrator access is required to change a badge."
