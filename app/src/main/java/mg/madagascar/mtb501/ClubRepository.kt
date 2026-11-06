@@ -210,7 +210,10 @@ class ClubRepository(
         require(getMyAccount()?.role == AppRole.ADMIN) { "Administrator access is required." }
         val memberRef = db.collection("members").document(memberId)
         if (!memberName.isNullOrBlank()) {
-            memberRef.set(mapOf("name" to memberName.trim(), "badge" to badge), com.google.firebase.firestore.SetOptions.merge()).await()
+            memberRef.set(
+                mapOf("name" to memberName.trim(), "badge" to badge, "publicProfile" to true),
+                com.google.firebase.firestore.SetOptions.merge()
+            ).await()
         } else {
             memberRef.update("badge", badge).await()
         }
