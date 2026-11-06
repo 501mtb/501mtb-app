@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -257,7 +258,7 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit 
         }
 
         OutlinedButton(
-            onClick = onOpenCommunityFeed,
+            onClick = onOpenChat,
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 10.dp)
         ) { Text("OPEN COMMUNITY FEED") }
     }
