@@ -92,10 +92,12 @@ private data class DemoShowcaseStory(
 )
 
 /**
- * UI 1 Home showcase. Sample content remains local until the real data modules are connected.
+ * UI 1 is intentionally a local SHOWCASE prototype.
+ * Sample content and all reactions/actions are held in Compose state only.
+ * Nothing on this screen writes to Firestore or publishes to Facebook.
  */
 @Composable
-fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit = {}) {
+fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit = {}, onAdminModeChange: (Boolean) -> Unit = {}) {
     val nextRides = remember {
         mutableStateListOf(
             DemoShowcaseRide(1, "DATE TBA", "UPCOMING RIDE 01", "ALL LEVELS", "—", "Location to be announced", "—", false),
@@ -120,9 +122,11 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit 
             DemoShowcaseStory(26, "RIDER 06", "SUPER", "Member ride", "—", "DATE TBA")
         )
     }
+    val dataSourceLabel = "DEMO PREVIEW • NO CONNECTED DATA"
     var storyPage by remember { mutableStateOf(0) }
     var visibleStoryCount by remember { mutableStateOf(6) }
 
+    var demoAdmin by remember { mutableStateOf(false) }
     var selectedRide by remember { mutableStateOf<DemoShowcaseRide?>(null) }
     var selectedStory by remember { mutableStateOf<DemoShowcaseStory?>(null) }
     var gpsStory by remember { mutableStateOf<DemoShowcaseStory?>(null) }
@@ -147,13 +151,28 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit 
                     color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
                 Text("MADAGASCAR • MOUNTAIN BIKING",
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(dataSourceLabel, style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
+            }
+            TextButton(onClick = { demoAdmin = !demoAdmin; onAdminModeChange(demoAdmin) }) {
+                Text(if (demoAdmin) "EXIT ADMIN DEMO" else "ADMIN DEMO")
             }
             IconButton(onClick = onOpenSettings) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.primary)
             }
         }
 
-        ShowcaseSectionHeader("NEXT RIDE", "UPCOMING MTB RIDES", false) {
+        if (demoAdmin) {
+            Text(
+                "SHOWCASE ADMIN MODE • actions are demonstrations only",
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+                color = MaterialTheme.colorScheme.tertiary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        ShowcaseSectionHeader("NEXT RIDE", "UPCOMING MTB RIDES", demoAdmin) {
             adminMessage = "Add a new Next Ride"
         }
         LazyRow(
@@ -163,7 +182,7 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit 
             items(nextRides, key = { it.id }) { ride ->
                 NextRideCard(
                     ride = ride,
-                    admin = false,
+                    admin = demoAdmin,
                     onOpen = { selectedRide = ride },
                     onAdmin = { action -> adminMessage = "$action: ${ride.title}" },
                     onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
@@ -175,7 +194,7 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit 
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            ShowcaseSectionHeader("PAST EVENT", "MTB EVENT", false) {
+            ShowcaseSectionHeader("PAST EVENT", "MTB EVENT", demoAdmin) {
                 adminMessage = "Add a Past Event"
             }
             LazyRow(
@@ -185,7 +204,7 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit 
                 items(pastEvents, key = { it.id }) { ride ->
                     PastEventCard(
                         ride = ride,
-                        admin = false,
+                        admin = demoAdmin,
                         onOpen = { selectedRide = ride },
                         onAdmin = { action -> adminMessage = "$action: ${ride.title}" },
                         onFire = { fired[ride.id] = !(fired[ride.id] ?: false) },
@@ -206,7 +225,7 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit 
                 items(stories.drop(storyPage * 8).take(visibleStoryCount), key = { it.id }) { story ->
                     CommunityStoryCard(
                         story = story,
-                        admin = false,
+                        admin = demoAdmin,
                         isFired = fired[story.id] ?: false,
                         onOpen = { selectedStory = story },
                         onFire = { fired[story.id] = !(fired[story.id] ?: false) },
