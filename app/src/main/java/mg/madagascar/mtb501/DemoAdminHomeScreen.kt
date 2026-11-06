@@ -65,7 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-private data class ShowcaseRide(
+private data class DemoShowcaseRide(
     val id: Int,
     val date: String,
     val title: String,
@@ -78,7 +78,7 @@ private data class ShowcaseRide(
     val externalUrl: String? = null
 )
 
-private data class ShowcaseStory(
+private data class DemoShowcaseStory(
     val id: Int,
     val name: String,
     val badge: String,
@@ -99,26 +99,26 @@ private data class ShowcaseStory(
 fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit = {}, onAdminModeChange: (Boolean) -> Unit = {}) {
     val nextRides = remember {
         mutableStateListOf(
-            ShowcaseRide(1, "DATE TBA", "UPCOMING RIDE 01", "ALL LEVELS", "—", "Location to be announced", "—", false),
-            ShowcaseRide(2, "DATE TBA", "UPCOMING RIDE 02", "ALL LEVELS", "—", "Location to be announced", "—", false),
-            ShowcaseRide(3, "DATE TBA", "UPCOMING RIDE 03", "ALL LEVELS", "—", "Location to be announced", "—", false)
+            DemoShowcaseRide(1, "DATE TBA", "UPCOMING RIDE 01", "ALL LEVELS", "—", "Location to be announced", "—", false),
+            DemoShowcaseRide(2, "DATE TBA", "UPCOMING RIDE 02", "ALL LEVELS", "—", "Location to be announced", "—", false),
+            DemoShowcaseRide(3, "DATE TBA", "UPCOMING RIDE 03", "ALL LEVELS", "—", "Location to be announced", "—", false)
         )
     }
     val pastEvents = remember {
         mutableStateListOf(
-            ShowcaseRide(11, "DATE TBA", "PAST EVENT 01", "ALL LEVELS", "—", "Location", "—", true),
-            ShowcaseRide(12, "DATE TBA", "PAST EVENT 02", "ALL LEVELS", "—", "Location", "—", true),
-            ShowcaseRide(13, "DATE TBA", "PAST EVENT 03", "ALL LEVELS", "—", "Location", "—", true)
+            DemoShowcaseRide(11, "DATE TBA", "PAST EVENT 01", "ALL LEVELS", "—", "Location", "—", true),
+            DemoShowcaseRide(12, "DATE TBA", "PAST EVENT 02", "ALL LEVELS", "—", "Location", "—", true),
+            DemoShowcaseRide(13, "DATE TBA", "PAST EVENT 03", "ALL LEVELS", "—", "Location", "—", true)
         )
     }
     val stories = remember {
         mutableStateListOf(
-            ShowcaseStory(21, "RIDER 01", "ROOKIE", "Member ride", "—", "DATE TBA"),
-            ShowcaseStory(22, "RIDER 02", "SUPER", "Member ride", "—", "DATE TBA"),
-            ShowcaseStory(23, "RIDER 03", "ELITE", "Member ride", "—", "DATE TBA"),
-            ShowcaseStory(24, "RIDER 04", "LEADER", "Member ride", "—", "DATE TBA"),
-            ShowcaseStory(25, "RIDER 05", "ROOKIE", "Member ride", "—", "DATE TBA"),
-            ShowcaseStory(26, "RIDER 06", "SUPER", "Member ride", "—", "DATE TBA")
+            DemoShowcaseStory(21, "RIDER 01", "ROOKIE", "Member ride", "—", "DATE TBA"),
+            DemoShowcaseStory(22, "RIDER 02", "SUPER", "Member ride", "—", "DATE TBA"),
+            DemoShowcaseStory(23, "RIDER 03", "ELITE", "Member ride", "—", "DATE TBA"),
+            DemoShowcaseStory(24, "RIDER 04", "LEADER", "Member ride", "—", "DATE TBA"),
+            DemoShowcaseStory(25, "RIDER 05", "ROOKIE", "Member ride", "—", "DATE TBA"),
+            DemoShowcaseStory(26, "RIDER 06", "SUPER", "Member ride", "—", "DATE TBA")
         )
     }
     val dataSourceLabel = "DEMO PREVIEW • NO CONNECTED DATA"
@@ -126,10 +126,10 @@ fun DemoAdminHomeScreen(onOpenChat: () -> Unit = {}, onOpenSettings: () -> Unit 
     var visibleStoryCount by remember { mutableStateOf(6) }
 
     var demoAdmin by remember { mutableStateOf(false) }
-    var selectedRide by remember { mutableStateOf<ShowcaseRide?>(null) }
-    var selectedStory by remember { mutableStateOf<ShowcaseStory?>(null) }
-    var gpsStory by remember { mutableStateOf<ShowcaseStory?>(null) }
-    var profileStory by remember { mutableStateOf<ShowcaseStory?>(null) }
+    var selectedRide by remember { mutableStateOf<DemoShowcaseRide?>(null) }
+    var selectedStory by remember { mutableStateOf<DemoShowcaseStory?>(null) }
+    var gpsStory by remember { mutableStateOf<DemoShowcaseStory?>(null) }
+    var profileStory by remember { mutableStateOf<DemoShowcaseStory?>(null) }
     var commentsFor by remember { mutableStateOf<String?>(null) }
     var shareMessage by remember { mutableStateOf<String?>(null) }
     var adminMessage by remember { mutableStateOf<String?>(null) }
@@ -370,7 +370,7 @@ private fun SectionHeading(title: String, subtitle: String) {
 
 @Composable
 private fun NextRideCard(
-    ride: ShowcaseRide,
+    ride: DemoShowcaseRide,
     admin: Boolean,
     onOpen: () -> Unit,
     onAdmin: (String) -> Unit,
@@ -413,7 +413,7 @@ private fun NextRideCard(
 
 @Composable
 private fun PastEventCard(
-    ride: ShowcaseRide,
+    ride: DemoShowcaseRide,
     admin: Boolean,
     onOpen: () -> Unit,
     onAdmin: (String) -> Unit,
@@ -452,7 +452,7 @@ private fun PastEventCard(
 
 @Composable
 private fun CommunityStoryCard(
-    story: ShowcaseStory,
+    story: DemoShowcaseStory,
     admin: Boolean,
     isFired: Boolean,
     onOpen: () -> Unit,
@@ -585,7 +585,7 @@ private fun PhotoArtwork(title: String, modifier: Modifier = Modifier, variant: 
     }
 }
 
-private fun ridePhotoUrl(ride: ShowcaseRide): String {
+private fun ridePhotoUrl(ride: DemoShowcaseRide): String {
     return ride.photoUrl ?: "https://raw.githubusercontent.com/501mtb/501mtb.github.io/main/assets/images/event/event-001.jpg"
 }
 private fun galleryPhotoUrl(index: Int): String {
@@ -599,7 +599,7 @@ private fun galleryPhotoUrl(index: Int): String {
 
 @Composable
 private fun RideShowcaseDialog(
-    ride: ShowcaseRide,
+    ride: DemoShowcaseRide,
     isFired: Boolean,
     onFire: () -> Unit,
     onComment: () -> Unit,
@@ -649,7 +649,7 @@ private fun RideShowcaseDialog(
 
 @Composable
 private fun StoryDetailDialog(
-    story: ShowcaseStory,
+    story: DemoShowcaseStory,
     isFired: Boolean,
     onFire: () -> Unit,
     onGps: () -> Unit,
@@ -736,7 +736,7 @@ private fun AdminShowcaseDialog(action: String, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun GpsShowcaseDialog(story: ShowcaseStory, onDismiss: () -> Unit) {
+private fun GpsShowcaseDialog(story: DemoShowcaseStory, onDismiss: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -786,7 +786,7 @@ private fun GpsShowcaseDialog(story: ShowcaseStory, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun RiderProfileShowcaseDialog(story: ShowcaseStory, onDismiss: () -> Unit) {
+private fun RiderProfileShowcaseDialog(story: DemoShowcaseStory, onDismiss: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     AlertDialog(
         onDismissRequest = onDismiss,
