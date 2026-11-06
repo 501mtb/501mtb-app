@@ -1,0 +1,294 @@
+{
+  "source": "Classeur_501MTB_V2.xlsx via data/app-data.json",
+  "generated_at": "2026-11-04T19:35:35+00:00",
+  "members": [
+    {
+      "id": "RID-001",
+      "name": "KASSIM",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-001.jpg"
+    },
+    {
+      "id": "RID-002",
+      "name": "DIOLIN",
+      "badge": "Top Member",
+      "photo": "./assets/images/member/member-002.jpg"
+    },
+    {
+      "id": "RID-003",
+      "name": "SITRAKA",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-003.jpg"
+    },
+    {
+      "id": "RID-004",
+      "name": "MORGIO",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-004.jpg"
+    },
+    {
+      "id": "RID-005",
+      "name": "TOKY",
+      "badge": "Leader",
+      "photo": "./assets/images/member/member-005.jpg"
+    },
+    {
+      "id": "RID-006",
+      "name": "KIX",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-006.jpg"
+    },
+    {
+      "id": "RID-007",
+      "name": "NASOLO",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-007.jpg"
+    },
+    {
+      "id": "RID-008",
+      "name": "TANJONA",
+      "badge": "Elite",
+      "photo": "./assets/images/member/member-008.jpg"
+    },
+    {
+      "id": "RID-009",
+      "name": "YAINA",
+      "badge": "Elite",
+      "photo": "./assets/images/member/member-009.jpg"
+    },
+    {
+      "id": "RID-010",
+      "name": "MARUIS",
+      "badge": "Elite",
+      "photo": "./assets/images/member/member-010.jpg"
+    },
+    {
+      "id": "RID-011",
+      "name": "NAINA",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-011.jpg"
+    },
+    {
+      "id": "RID-012",
+      "name": "MINATO",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-012.jpg"
+    },
+    {
+      "id": "RID-013",
+      "name": "JUSSY",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-013.jpg"
+    },
+    {
+      "id": "RID-014",
+      "name": "JUDAN",
+      "badge": "Top Member",
+      "photo": "./assets/images/member/member-014.jpg"
+    },
+    {
+      "id": "RID-015",
+      "name": "HENINTSOA",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-015.jpg"
+    },
+    {
+      "id": "RID-016",
+      "name": "ISMAEL",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-016.jpg"
+    },
+    {
+      "id": "RID-017",
+      "name": "Yaki",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-017.jpg"
+    },
+    {
+      "id": "RID-018",
+      "name": "NAMBININA",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-018.jpg"
+    },
+    {
+      "id": "RID-019",
+      "name": "KRIS",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-019.jpg"
+    },
+    {
+      "id": "RID-020",
+      "name": "ANGELICO",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-020.jpg"
+    },
+    {
+      "id": "RID-021",
+      "name": "DIDIER",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-021.jpg"
+    },
+    {
+      "id": "RID-022",
+      "name": "KELLY",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-022.jpg"
+    },
+    {
+      "id": "RID-023",
+      "name": "MIKA",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-023.jpg"
+    },
+    {
+      "id": "RID-024",
+      "name": "JOE",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-024.jpg"
+    },
+    {
+      "id": "RID-025",
+      "name": "JACQUIS",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-025.jpg"
+    },
+    {
+      "id": "RID-026",
+      "name": "SYLVANO",
+      "badge": "Elite",
+      "photo": "./assets/images/member/member-026.jpg"
+    },
+    {
+      "id": "RID-027",
+      "name": "Njakah",
+      "badge": "Leader",
+      "photo": "./assets/images/member/member-027.jpg"
+    },
+    {
+      "id": "RID-028",
+      "name": "TEFY",
+      "badge": "Elite",
+      "photo": "./assets/images/member/member-028.jpg"
+    },
+    {
+      "id": "RID-029",
+      "name": "Cristion",
+      "badge": "Elite",
+      "photo": "./assets/images/member/member-029.jpg"
+    },
+    {
+      "id": "RID-030",
+      "name": "SERENZO",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-030.jpg"
+    },
+    {
+      "id": "RID-031",
+      "name": "DADA",
+      "badge": "Elite",
+      "photo": "./assets/images/member/member-031.jpg"
+    },
+    {
+      "id": "RID-032",
+      "name": "THOMAS",
+      "badge": "Leader",
+      "photo": "./assets/images/member/member-032.jpg"
+    },
+    {
+      "id": "RID-033",
+      "name": "JAYAH",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-033.jpg"
+    },
+    {
+      "id": "RID-034",
+      "name": "FREDDY",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-034.jpg"
+    },
+    {
+      "id": "RID-035",
+      "name": "HAJAH",
+      "badge": "Elite",
+      "photo": "./assets/images/member/member-035.jpg"
+    },
+    {
+      "id": "RID-036",
+      "name": "JULIEN",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-036.jpg"
+    },
+    {
+      "id": "RID-037",
+      "name": "Jul",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-037.jpg"
+    },
+    {
+      "id": "RID-038",
+      "name": "VELO",
+      "badge": "Elite",
+      "photo": "./assets/images/member/member-038.jpg"
+    },
+    {
+      "id": "RID-039",
+      "name": "EDDY",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-039.jpg"
+    },
+    {
+      "id": "RID-040",
+      "name": "YVES",
+      "badge": "Rookie",
+      "photo": "./assets/images/member/member-040.jpg"
+    },
+    {
+      "id": "RID-042",
+      "name": "Jaurès",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-042.jpg"
+    },
+    {
+      "id": "RID-043",
+      "name": "Joel",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-043.jpg"
+    },
+    {
+      "id": "RID-044",
+      "name": "Ken",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-044.jpg"
+    },
+    {
+      "id": "RID-045",
+      "name": "Herver",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-045.jpg"
+    },
+    {
+      "id": "RID-046",
+      "name": "Mandresy",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-046.jpg"
+    },
+    {
+      "id": "RID-047",
+      "name": "Agnès",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-047.jpg"
+    },
+    {
+      "id": "RID-048",
+      "name": "Philbert",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-048.jpg"
+    },
+    {
+      "id": "RID-049",
+      "name": "Rodolphe",
+      "badge": "Super",
+      "photo": "./assets/images/member/member-049.jpg"
+    }
+  ]
+}
