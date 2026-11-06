@@ -498,9 +498,9 @@ private fun ClubProfilePreview(
     var editValue by remember { mutableStateOf("") }
 
     val sections = listOf(
-        Triple("OUR VISION", vision, "vision"),
-        Triple("OUR MISSION", mission, "mission"),
-        Triple("OUR COMMUNITY", community, "community")
+        Triple(tr(language, "OUR VISION", "NOTRE VISION", "VINANTSIKA"), vision, "vision"),
+        Triple(tr(language, "OUR MISSION", "NOTRE MISSION", "IRAKA"), mission, "mission"),
+        Triple(tr(language, "OUR COMMUNITY", "NOTRE COMMUNAUTÉ", "FIARAHAMONINA"), community, "community")
     )
 
     Column(
@@ -514,8 +514,8 @@ private fun ClubProfilePreview(
         )
 
         listOf(
-            Triple("TITLE", title, "title"),
-            Triple("DESCRIPTION", description, "description")
+            Triple(tr(language, "TITLE", "TITRE", "LOHATENY"), title, "title"),
+            Triple(tr(language, "DESCRIPTION", "DESCRIPTION", "FANAZAVANA"), description, "description")
         ).forEach { (label, value, key) ->
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
