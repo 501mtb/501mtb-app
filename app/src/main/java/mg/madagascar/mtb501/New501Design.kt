@@ -75,9 +75,9 @@ private val newTabs = listOf(
 )
 
 /**
- * New six-screen UI prototype.
- * UI 1-5 use local preview content only. Google Authentication in Settings is live.
- * No Firestore, Storage, website data or ImageKit data is loaded by this prototype.
+ * New six-screen 501MTB app UI.
+ * Google Authentication and existing Firestore account/member records are connected.
+ * No account migration or automatic member creation is performed here.
  */
 @Composable
 fun New501DesignApp() {
@@ -98,15 +98,32 @@ fun New501DesignApp() {
     var showBadgeDialog by remember { mutableStateOf(false) }
     var badgeTargetId by remember { mutableStateOf<String?>(null) }
     var showChatInfo by remember { mutableStateOf(false) }
-    var adminPreview by remember { mutableStateOf(false) }
+    var isAdmin by remember { mutableStateOf(false) }
+    var isLoadingMembers by remember { mutableStateOf(false) }
+    val previewMembers = remember { mutableStateListOf<PreviewMember>() }
+    val repository = remember { ClubRepository() }
 
-    val previewMembers = remember {
-        mutableStateListOf(
-            PreviewMember("Member name", "RID-001", "ROOKIE"),
-            PreviewMember("Member name", "RID-002", "SUPER"),
-            PreviewMember("Member name", "RID-003", "ELITE"),
-            PreviewMember("Member name", "RID-004", "LEADER")
-        )
+    LaunchedEffect(currentUser?.uid) {
+        previewMembers.clear()
+        isAdmin = false
+        if (currentUser != null) {
+            isLoadingMembers = true
+            try {
+                val account = repository.getMyAccount()
+                isAdmin = account?.role == AppRole.ADMIN
+                val records = if (isAdmin) repository.getAllMembers() else repository.getPublicMembers()
+                previewMembers.addAll(records.map {
+                    PreviewMember(it.name, it.id, it.badge)
+                })
+                if (account == null) {
+                    authMessage = "Google account connected, but no existing 501MTB user record was found."
+                }
+            } catch (error: Exception) {
+                authMessage = error.localizedMessage ?: "Unable to load 501MTB member records."
+            } finally {
+                isLoadingMembers = false
+            }
+        }
     }
 
     DisposableEffect(auth) {
@@ -209,7 +226,7 @@ fun New501DesignApp() {
             }
         ) { padding ->
             when (screen) {
-                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" }, onAdminModeChange = { adminPreview = it })
+                "home" -> DemoAdminHomeScreen(onOpenChat = { screen = "chat" }, onOpenSettings = { settingsPage = "main"; screen = "settings" }, onAdminModeChange = { /* Demo toggle never grants administrator access. */ })
                 "club" -> ClubProfilePreview(Modifier.padding(padding))
                 "record" -> RecordPreview(Modifier.padding(padding))
                 "chat" -> GeneralChatPreview(
@@ -219,14 +236,14 @@ fun New501DesignApp() {
                 "rider" -> RiderPreview(
                     Modifier.padding(padding),
                     member = selectedMember,
-                    isAdminPreview = adminPreview,
-                    onChangeBadge = { badgeTargetId = selectedMember.memberId; showBadgeDialog = true }
+                    isAdminPreview = isAdmin,
+                    onChangeBadge = { if (isAdmin) { badgeTargetId = selectedMember.memberId; showBadgeDialog = true } }
                 )
                 "settings" -> SettingsPreview(
                     modifier = Modifier.padding(padding),
                     page = settingsPage,
                     members = previewMembers,
-                    isAdminPreview = adminPreview,
+                    isAdminPreview = isAdmin,
                     language = language,
                     themeChoice = themeChoice,
                     fontSize = fontSize,
@@ -301,12 +318,26 @@ fun New501DesignApp() {
                 title = { Text("Change rider badge") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("ROOKIE", "SUPER", "ELITE", "LEADER", "TOP MEMBER").forEach { badge ->
+                        listOf("Rookie", "Super", "Elite", "Leader", "Top Member").forEach { badge ->
                             TextButton(onClick = {
-                                selectedMember = selectedMember.copy(badge = badge)
-                                val targetIndex = previewMembers.indexOfFirst { it.memberId == badgeTargetId }
-                                if (targetIndex >= 0) previewMembers[targetIndex] = previewMembers[targetIndex].copy(badge = badge)
-                                showBadgeDialog = false
+                                if (!isAdmin || badgeTargetId.isNullOrBlank()) {
+                                    authMessage = "Administrator access is required to change a badge."
+                                    showBadgeDialog = false
+                                } else {
+                                    scope.launch {
+                                        try {
+                                            repository.updateMemberBadge(badgeTargetId!!, badge)
+                                            selectedMember = selectedMember.copy(badge = badge)
+                                            val targetIndex = previewMembers.indexOfFirst { it.memberId == badgeTargetId }
+                                            if (targetIndex >= 0) previewMembers[targetIndex] = previewMembers[targetIndex].copy(badge = badge)
+                                            authMessage = "Badge updated."
+                                        } catch (error: Exception) {
+                                            authMessage = error.localizedMessage ?: "Badge update failed."
+                                        } finally {
+                                            showBadgeDialog = false
+                                        }
+                                    }
+                                }
                             }) { Text(badge) }
                         }
                     }
@@ -529,7 +560,17 @@ private fun SettingsPreview(
         "members" -> LazyColumn(modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 14.dp)) {
             item {
                 Text("MEMBERS", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-                Text("Preview list • real member data will be connected later", color = MTBMuted)
+                Text(
+                    if (isAdminPreview) "Members loaded from the 501MTB database"
+                    else "Public 501MTB member profiles",
+                    color = MTBMuted
+                )
+                if (members.isEmpty()) {
+                    Text(
+                        if (isLoadingMembers) "Loading members…" else "No member profiles available.",
+                        color = MTBMuted
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
             }
             items(members) { member ->
@@ -564,7 +605,12 @@ private fun SettingsPreview(
                         }
                     }
                     if (authMessage != null) Text(authMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    Text("Authentication is connected. Member records and permissions will be integrated later.", color = MTBMuted, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        if (currentUser == null) "Sign in with one of the existing 501MTB Google accounts."
+                        else "Your existing 501MTB account and permissions are read from Firestore.",
+                        color = MTBMuted,
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
         }
