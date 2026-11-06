@@ -202,13 +202,18 @@ class ClubRepository(
             )
         }.sortedBy { it.name }
 
-    suspend fun updateMemberBadge(memberId: String, badge: String) {
+    suspend fun updateMemberBadge(memberId: String, badge: String, memberName: String? = null) {
         require(memberId.isNotBlank()) { "Member ID is missing." }
         require(badge in setOf("Rookie", "Super", "Elite", "Leader", "Top Member", "Admin", "Ambassador")) {
             "Invalid member badge."
         }
         require(getMyAccount()?.role == AppRole.ADMIN) { "Administrator access is required." }
-        db.collection("members").document(memberId).update("badge", badge).await()
+        val memberRef = db.collection("members").document(memberId)
+        if (!memberName.isNullOrBlank()) {
+            memberRef.set(mapOf("name" to memberName.trim(), "badge" to badge), com.google.firebase.firestore.SetOptions.merge()).await()
+        } else {
+            memberRef.update("badge", badge).await()
+        }
     }
 
     suspend fun updateMemberVisibility(memberId: String, visible: Boolean) {
