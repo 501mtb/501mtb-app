@@ -182,14 +182,22 @@ class ClubRepository(
                 )
             }.sortedBy { it.name }
 
+    /**
+     * Loads every entry in the official members registry. A Google/Firebase app
+     * account is not required for a person to appear in this list.
+     */
     suspend fun getAllMembers(): List<ClubMember> =
         db.collection("members").get().await().documents.mapNotNull { doc ->
-            val name = doc.getString("name") ?: return@mapNotNull null
+            val name = doc.getString("name")
+                ?: doc.getString("fullName")
+                ?: doc.getString("memberName")
+                ?: doc.getString("displayName")
+                ?: return@mapNotNull null
             ClubMember(
                 id = doc.id,
                 name = name,
                 badge = doc.getString("badge") ?: "Rookie",
-                photoURL = doc.getString("photoURL"),
+                photoURL = doc.getString("photoURL") ?: doc.getString("photoUrl"),
                 publicProfile = doc.getBoolean("publicProfile") ?: false
             )
         }.sortedBy { it.name }
